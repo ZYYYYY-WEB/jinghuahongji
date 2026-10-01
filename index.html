@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>京华红迹——北京红色地标智能交互导览地图</title>
+    <style>
+        :root{
+            --red-900:#5e0d14;
+            --red-700:#8c1c22;
+            --red-500:#b8262f;
+            --red-300:#e05a52;
+            --gold-600:#9a6f16;
+            --gold-400:#c9932b;
+            --gold-200:#f3d489;
+            --gold-100:#ffe9b8;
+            --paper:#fbf5ea;
+            --surface:#fffdf7;
+            --ink:#3a2320;
+            --ink-soft:#6f554e;
+            --line:#e6d6b9;
+            --line-strong:#d9b98a;
+            --shadow-soft:0 8px 26px rgba(110,25,18,.10);
+            --shadow-lift:0 16px 40px rgba(110,25,18,.18);
+            --radius-lg:18px;
+            --radius-md:12px;
+            --radius-sm:8px;
+            --focus-ring:0 0 0 3px rgba(185,38,47,.35);
+        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        html{scroll-behavior:smooth;}
+        body{
+            font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+            background:
+                radial-gradient(circle at 12% 8%, rgba(185,38,47,.07), transparent 34%),
+                radial-gradient(circle at 88% 20%, rgba(201,147,43,.08), transparent 30%),
+                var(--paper);
+            color:var(--ink);
+            overflow-x:hidden;
+        }
+        a{color:var(--red-500);}
+        :focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:4px;}
+
+        /* ---------- 头部 ---------- */
+        header{
+            position:relative;
+            background:
+                radial-gradient(circle at 18% 0%, rgba(255,255,255,.16), transparent 42%),
+                linear-gradient(118deg,var(--red-900) 0%,var(--red-700) 46%,var(--red-500) 100%);
+            color:#fff;
+            text-align:center;
+            padding:36px 20px 32px;
+            overflow:hidden;
+        }
+        header::before{
+            content:"";
+            position:absolute;
+            left:-8%;right:-8%;top:6px;height:10px;
+            background:linear-gradient(90deg,transparent,var(--gold-200) 24%,var(--gold-400) 50%,var(--gold-200) 76%,transparent);
+            opacity:.9;
+        }
+        .stars-row{
+            display:flex;justify-content:center;gap:16px;margin-bottom:10px;
+        }
+        .stars-row svg{
+            width:26px;height:26px;
+            filter:drop-shadow(0 2px 3px rgba(0,0,0,.45)) drop-shadow(0 0 9px rgba(255,216,61,.65));
+        }
+        .stars-row svg path{fill:#ffd83d;}
+        header h1{
+            font-family:"STXingkai","华文行楷","KaiTi","STKaiti","楷体","SimSun",serif;
+            font-size:clamp(48px,8vw,96px);
+            font-weight:900;
+            letter-spacing:.06em;
+            line-height:1.15;
+            background:linear-gradient(180deg,#fffdf2 0%,#ffe9a8 32%,#ffd34d 62%,#f7b81f 82%,#ffe79a 100%);
+            -webkit-background-clip:text;
+            background-clip:text;
+            color:transparent;
+            filter:drop-shadow(0 0 18px rgba(255,214,90,.55)) drop-shadow(0 8px 22px rgba(0,0,0,.32));
+        }
+        header p{
+            margin-top:12px;
+            font-size:clamp(13px,1.6vw,16px);
+            letter-spacing:.12em;
+            color:#ffe9c4;
+            opacity:.95;
+        }
+        header .subline{
+            display:inline-block;
+            margin-top:14px;
+            padding:5px 18px;
+            border:1px solid rgba(255,232,178,.55);
+            border-radius:999px;
+            font-size:13px;
+            letter-spacing:.18em;
+            color:var(--gold-100);
+            background:rgba(94,13,20,.28);
+        }
+
+        /* ---------- 导航 ---------- */
+        nav{
+            position:sticky;top:0;z-index:30;
+            display:flex;flex-wrap:wrap;justify-content:center;gap:8px;
+            padding:10px 12px;
+            background:rgba(251,245,234,.92);
+            backdrop-filter:blur(10px);
+            box-shadow:0 2px 14px rgba(110,25,18,.10);
+        }
+        nav button{
+            border:1px solid var(--line-strong);
+            background:transparent;
+            color:var(--ink);
+            padding:9px 18px;
+            font-size:14px;
+            border-radius:999px;
+            cursor:pointer;
+            transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+        }
+        nav button:hover:not(.active){
+            background:#fff;
+            transform:translateY(-1px);
+            box-shadow:var(--shadow-soft);
+        }
+        nav button.active{
+            background:linear-gradient(120deg,var(--red-700),var(--red-500));
+            border-color:var(--red-700);
+            color:#fff;
+            box-shadow:0 6px 16px rgba(140,28,34,.32);
+        }
+
+        main{max-width:1280px;margin:0 auto;padding:22px 18px 40px;}
+        .page-panel{display:none;}
+        .page-panel.show{display:block;animation:fadeIn .32s ease both;}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+        /* ---------- 首页地图总览 ---------- */
+        .map-card{
+            background:var(--surface);
+            border:1px solid var(--line);
+            border-radius:var(--radius-lg);
+            box-shadow:var(--shadow-soft);
+            overflow:hidden;
+        }
+        .map-toolbar{
+            display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+            padding:14px 18px;
+            border-bottom:1px dashed var(--line);
+        }
+        .map-toolbar .mt-title{
+            font-family:"STXingkai","KaiTi","STKaiti","楷体",serif;
+            font-size:20px;color:var(--red-700);
+            display:flex;align-items:center;gap:8px;
+        }
+        .map-toolbar .mt-title svg{width:20px;height:20px;fill:var(--red-500);}
+        .map-legend{
+            display:flex;align-items:center;gap:10px;
+            font-size:13px;color:var(--ink-soft);
+        }
+        .legend-dot{
+            width:16px;height:16px;border-radius:50%;
+            background:radial-gradient(circle at 34% 30%, #e96a5f, #b8262f 55%, #8c1c22);
+            border:2px solid #fff;
+            box-shadow:0 0 0 2px rgba(140,28,34,.25);
+            display:inline-block;
+        }
+
+        /* 百度地图容器 */
+        .map-canvas{
+            position:relative;
+            width:100%;
+            height:min(640px,66vh);
+            overflow:hidden;
+            background:#e8e2d2;
+        }
+        .map-loading{
+            position:absolute;left:12px;top:12px;right:12px;
+            padding:10px 14px;
+            background:rgba(255,253,247,.94);
+            border:1px solid var(--line-strong);
+            border-radius:10px;
+            font-size:13px;color:var(--ink-soft);
+            box-shadow:var(--shadow-soft);
+            z-index:8;
+            display:none;
+        }
+        .map-loading.show{display:block;}
+
+        /* 离线降级 SVG 地图 */
+        #mapFallback{
+            display:none;
+            position:relative;
+            width:100%;
+            height:min(640px,66vh);
+            overflow:hidden;
+            background:#f6f1e6;
+        }
+        #mapFallback.show{display:block;}
+        #mapFallback svg{width:100%;height:100%;display:block;}
+        .fallback-note{
+            position:absolute;left:12px;top:12px;right:12px;
+            padding:10px 14px;
+            background:rgba(255,253,247,.94);
+            border:1px solid var(--line-strong);
+            border-radius:10px;
+            font-size:13px;color:var(--ink-soft);
+            box-shadow:var(--shadow-soft);
+            z-index:2;
+        }
+        .fb-point{cursor:pointer;transition:transform .18s;}
+        .fb-point:hover{transform:scale(1.45);transform-origin:center;}
+        .fb-popup{
+            position:absolute;left:50%;top:70px;transform:translateX(-50%);
+            width:min(560px,90%);
+            background:#fffdf7;
+            border:1px solid #d9b98a;
+            border-radius:12px;
+            box-shadow:0 14px 40px rgba(70,10,12,.28);
+            padding:18px 20px;
+            z-index:5;
+            display:none;
+        }
+
+        .map-hint{
+            display:flex;flex-wrap:wrap;justify-content:center;gap:8px 22px;
+            padding:12px 16px;
+            font-size:13px;color:var(--ink-soft);
+            background:#fffaf0;
+            border-top:1px dashed var(--line);
+        }
+        .map-hint b{color:var(--red-500);font-weight:600;}
+        .map-hint .hint-count{color:var(--gold-600);font-weight:700;}
+
+        /* 通用节标题 */
+        .section-head{
+            text-align:center;
+            margin:8px auto 26px;
+        }
+        .section-head h2{
+            font-family:"STXingkai","KaiTi","STKaiti","楷体",serif;
+            font-size:clamp(24px,3.4vw,34px);
+            color:var(--red-700);
+            letter-spacing:.05em;
+            display:inline-block;
+            padding:0 22px 10px;
+            border-bottom:3px double var(--gold-400);
+        }
+        .section-head .en{font-size:12px;letter-spacing:.3em;color:var(--gold-600);margin-top:6px;}
+
+        /* ---------- AI 智能路线规划器 ---------- */
+        .planner-card{
+            max-width:1060px;
+            margin:0 auto 30px;
+            background:var(--surface);
+            border:1px solid var(--line);
+            border-radius:var(--radius-lg);
+            box-shadow:var(--shadow-soft);
+            padding:22px 24px;
+        }
+        .planner-head{
+            display:flex;gap:14px;align-items:center;margin-bottom:16px;
+        }
+        .planner-icon{
+            width:52px;height:52px;flex:none;
+            display:flex;align-items:center;justify-content:center;
+            font-size:28px;
+            background:linear-gradient(135deg,var(--red-700),var(--red-500));
+            border-radius:14px;
+            box-shadow:0 6px 16px rgba(140,28,34,.3);
+        }
+        .planner-head h3{
+            font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+            font-weight:700;
+            font-size:20px;color:var(--red-700);
+            margin-bottom:4px;
+        }
+        .planner-head p{font-size:14px;color:var(--ink-soft);line-height:1.6;}
+        .planner-input-row{
+            display:flex;gap:10px;
+        }
+        .planner-input-row input{
+            flex:1;min-width:0;
+            padding:12px 14px;
+            font-size:15px;
+            border:1px solid var(--line-strong);
+            border-radius:10px;
+            background:#fff;
+            color:var(--ink);
+        }
+        .planner-input-row input:focus{outline:none;box-shadow:var(--focus-ring);}
+        #plannerBtn{
+            padding:12px 22px;
+            border:none;
+            border-radius:10px;
+            background:linear-gradient(120deg,var(--red-700),var(--red-500));
+            color:#fff;
+            font-size:15px;
+            cursor:pointer;
+            white-space:nowrap;
+            transition:transform .15s ease, box-shadow .15s ease;
+        }
+        #plannerBtn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(140,28,34,.32);}
+        #plannerClearBtn{
+            padding:12px 16px;
+            border:1px solid var(--line-strong);
+            border-radius:10px;
+            background:#fff;
+            color:var(--ink-soft);
+            font-size:15px;
+            cursor:pointer;
+            white-space:nowrap;
+            transition:transform .15s ease, background .15s ease;
+        }
+        #plannerClearBtn:hover{background:#fbf3e4;transform:translateY(-1px);}
+        .pr-guessed{
+            background:#fff7e0;
+            border:1px solid var(--gold-200);
+            border-radius:8px;
+            padding:8px 12px;
+            font-size:13px;color:#8a6a1a;
+            margin-bottom:10px;
+        }
+        /* 游览问答 */
+        .qa-block{
+            margin-top:20px;
+            padding-top:18px;
+            border-top:1px dashed var(--line);
+        }
+        .qa-head{display:flex;gap:12px;align-items:center;margin-bottom:12px;}
+        .qa-icon{
+            width:44px;height:44px;flex:none;
+            display:flex;align-items:center;justify-content:center;
+            font-size:22px;
+            background:linear-gradient(135deg,var(--gold-600),var(--gold-400));
+            border-radius:12px;
+            box-shadow:0 5px 12px rgba(154,111,22,.3);
+        }
+        .qa-head h3{
+            font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+            font-weight:700;font-size:19px;color:var(--red-700);margin-bottom:2px;
+        }
+        .qa-head p{font-size:13px;color:var(--ink-soft);line-height:1.5;}
+        .qa-input-row{display:flex;gap:10px;}
+        .qa-input-row input{
+            flex:1;min-width:0;
+            padding:12px 14px;
+            font-size:15px;
+            border:1px solid var(--line-strong);
+            border-radius:10px;
+            background:#fff;
+            color:var(--ink);
+        }
+        .qa-input-row input:focus{outline:none;box-shadow:var(--focus-ring);}
+        #qaBtn{
+            padding:12px 20px;
+            border:none;
+            border-radius:10px;
+            background:linear-gradient(120deg,var(--gold-600),var(--gold-400));
+            color:#fff;
+            font-size:15px;
+            cursor:pointer;
+            white-space:nowrap;
+            transition:transform .15s ease, box-shadow .15s ease;
+        }
+        #qaBtn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(154,111,22,.3);}
+        #qaResult{margin-top:12px;}
+        .qa-bubble{
+            background:#fdf8ee;
+            border:1px solid var(--gold-200);
+            border-radius:4px 14px 14px 14px;
+            padding:12px 14px;
+            font-size:14px;line-height:1.8;color:#5d4038;
+        }
+        .qa-line{white-space:pre-wrap;}
+        /* 推荐路线地图 */
+        #routeMapWrap{margin-top:14px;}
+        .route-map-title{
+            font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+            font-weight:700;
+            font-size:16px;color:var(--red-700);
+            margin-bottom:8px;
+        }
+        #routeMapContainer{
+            width:100%;height:320px;
+            border-radius:12px;
+            overflow:hidden;
+            border:1px solid var(--line);
+            background:#eef1f6;
+        }
+        .planner-quick{
+            display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+            margin-top:12px;
+            font-size:13px;color:var(--ink-soft);
+        }
+        .qchip{
+            padding:5px 12px;
+            border:1px solid var(--line-strong);
+            border-radius:999px;
+            background:#fff6e6;
+            color:#7a4a12;
+            font-size:13px;
+            cursor:pointer;
+            transition:transform .15s ease, background .15s ease;
+        }
+        .qchip:hover{background:#ffe9c4;transform:translateY(-1px);}
+        .planner-result{
+            margin-top:16px;
+            border-top:1px dashed var(--line);
+            padding-top:16px;
+        }
+        .planner-result .pr-title{
+            font-family:"STXingkai","KaiTi","STKaiti","楷体",serif;
+            font-size:21px;color:var(--red-700);
+            margin-bottom:12px;
+        }
+        .pr-route{
+            display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+            margin-bottom:12px;
+        }
+        .pr-stop{
+            display:inline-block;
+            padding:6px 12px;
+            background:#fdf3e0;
+            border:1px solid var(--gold-200);
+            border-radius:999px;
+            color:#7a4a12;
+            font-size:14px;font-weight:600;
+        }
+        .pr-route .arrow{color:var(--gold-400);font-weight:900;}
+        .pr-detail{margin-bottom:12px;}
+        .pr-detail-item{
+            border-left:3px solid var(--red-300);
+            padding:8px 12px;
+            background:#fdf6f2;
+            border-radius:0 8px 8px 0;
+            margin-bottom:8px;
+            font-size:14px;line-height:1.65;
+        }
+        .pr-detail-item b{color:var(--red-700);}
+        .pr-detail-item .place-tag{
+            display:inline-block;
+            padding:1px 8px;
+            border-radius:999px;
+            font-size:12px;
+            margin-left:6px;
+            vertical-align:middle;
+            white-space:nowrap;
+        }
+        .place-tag.red{background:#fbeeee;border:1px solid #e5b7b2;color:#8c1c22;}
+        .place-tag.scenic{background:#eef3fb;border:1px solid #c9d6ec;color:#4a6491;}
+        .pr-advice{
+            background:#fff1d6;
+            border-radius:8px;
+            padding:10px 12px;
+            font-size:13px;color:#7a5a16;
+        }
+        .pr-transport{
+            margin-top:10px;
+            padding:12px 14px;
+            background:#fdf7f4;
+            border:1px solid #f0d9d3;
+            border-left:4px solid var(--red-600);
+            border-radius:10px;
+            font-size:14px;
+            line-height:1.8;
+            color:#5a3a33;
+        }
+        .pr-transport b{color:var(--red-700);}
+        .pr-unmatched{
+            background:#fdecec;
+            border-radius:8px;
+            padding:8px 12px;
+            font-size:13px;color:#8c3a2e;
+            margin-bottom:10px;
+        }
+        .rec-title{
+            text-align:center;
+            font-family:"STXingkai","KaiTi","STKaiti","楷体",serif;
+            font-size:clamp(20px,2.6vw,26px);
+            color:var(--red-700);
+            margin:6px 0 22px;
+            letter-spacing:.06em;
+        }
+        .rec-title::before,.rec-title::after{content:"——";color:var(--gold-400);margin:0 8px;}
+
+        /* ---------- 研学路线 ---------- */
+        .route-list{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+        .route-item{
+            position:relative;
+            background:var(--surface);
+            border:1px solid var(--line);
+            border-left:6px solid var(--red-500);
+            border-radius:var(--radius-md);
+            padding:20px 22px 20px 74px;
+            box-shadow:var(--shadow-soft);
+            transition:transform .18s ease, box-shadow .18s ease;
+        }
+        .route-item:hover{transform:translateY(-2px);box-shadow:var(--shadow-lift);}
+        .route-badge{
+            position:absolute;left:20px;top:20px;
+            width:40px;height:40px;border-radius:50%;
+            background:linear-gradient(135deg,var(--red-700),var(--red-500));
+            color:#fff;display:flex;align-items:center;justify-content:center;
+            font-family:"STXingkai","KaiTi",serif;font-size:19px;
+            box-shadow:0 4px 10px rgba(140,28,34,.3);
+        }
+        .route-item h3{
+            color:var(--red-700);
+            font-size:17px;
+            margin-bottom:8px;
+        }
+        .route-tag{
+            display:inline-block;
+            margin-left:8px;
+            padding:2px 10px;
+            font-size:12px;
+            border-radius:999px;
+            background:#fff1d6;
+            color:var(--gold-600);
+            border:1px solid var(--gold-200);
+            vertical-align:middle;
+        }
+        .route-path{
+            color:#444;
+            margin:8px 0 10px;
+            font-weight:600;
+            font-size:14px;
+            display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+        }
+        .route-path .arrow{color:var(--gold-400);font-weight:900;}
+        .route-note{
+            background:linear-gradient(90deg,#fbf3e4,#fffaf0);
+            padding:12px 14px;
+            border-radius:8px;
+            line-height:1.75;
+            font-size:14px;
+            color:#5d4038;
+        }
+
+        /* ---------- 档案库 ---------- */
+        .archive-wrap{
+            display:grid;
+            grid-template-columns:repeat(auto-fill,minmax(310px,1fr));
+            gap:16px;
+        }
+        .archive-card{
+            position:relative;
+            background:var(--surface);
+            border:1px solid var(--line);
+            border-top:4px solid var(--red-500);
+            border-radius:var(--radius-md);
+            padding:18px 18px 16px;
+            box-shadow:var(--shadow-soft);
+            transition:transform .18s ease, box-shadow .18s ease;
+            display:flex;flex-direction:column;
+            min-width:0;
+        }
+        .archive-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lift);}
+        .archive-card h3{
+            color:var(--red-700);
+            font-size:17px;
+            margin-bottom:6px;
+            display:flex;align-items:baseline;gap:6px;
+        }
+        .archive-card h3::before{content:"★";color:var(--gold-400);font-size:13px;}
+        .archive-card .a-area{color:var(--ink-soft);font-size:13px;margin-bottom:8px;}
+        .archive-card .a-desc{line-height:1.7;font-size:14px;color:var(--ink);flex:1;}
+        .archive-card .a-tip{
+            margin-top:10px;
+            padding:8px 10px;
+            border-radius:8px;
+            background:#fff1d6;
+            color:#7a5a16;
+            font-size:13px;
+            line-height:1.6;
+        }
+        .archive-stat{
+            text-align:center;
+            margin:4px 0 18px;
+            font-size:14px;color:var(--ink-soft);
+        }
+        .archive-stat b{color:var(--red-500);font-size:20px;}
+
+        /* ---------- 页脚 ---------- */
+        footer{
+            background:linear-gradient(115deg,#2a0a0d,#4a0f14 55%,#6d1118);
+            color:#e6d2b8;
+            text-align:center;
+            padding:22px 18px 26px;
+            font-size:14px;
+            border-top:3px solid var(--gold-400);
+        }
+        footer .f-title{
+            font-family:"STXingkai","KaiTi",serif;
+            font-size:17px;
+            color:var(--gold-100);
+            letter-spacing:.06em;
+            margin-bottom:6px;
+        }
+        footer .f-sub{font-size:13px;opacity:.82;}
+
+        /* ---------- 响应式 ---------- */
+        @media (max-width:720px){
+            main{padding:16px 12px 30px;}
+            .route-item{padding:18px 16px 18px 62px;}
+            .route-badge{left:12px;top:16px;width:36px;height:36px;font-size:17px;}
+            .planner-card{padding:18px 16px;}
+            .planner-input-row{flex-direction:column;}
+            #plannerBtn,#plannerClearBtn{width:100%;}
+            .qa-input-row{flex-direction:column;}
+            #qaBtn{width:100%;}
+            .archive-wrap{grid-template-columns:1fr;}
+            nav button{padding:8px 12px;font-size:13px;}
+        }
+
+        /* ---------- 打印 ---------- */
+        @media print{
+            header{background:#fff;color:#222;-webkit-text-stroke:0;text-shadow:none;filter:none;}
+            header h1{color:var(--red-700);background:none;-webkit-text-stroke:0;text-shadow:none;filter:none;}
+            nav{display:none;}
+            .map-canvas,.map-hint{height:420px;}
+            .page-panel{display:none;}
+            .page-panel.show{display:block;}
+            .archive-card,.route-item,.planner-card{box-shadow:none;break-inside:avoid;}
+            footer{background:#fff;color:#555;border-top:1px solid #999;}
+        }
+        @media (prefers-reduced-motion:reduce){
+            *{animation:none!important;transition:none!important;scroll-behavior:auto!important;}
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="stars-row" aria-hidden="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.3 6.8L12 17.2l-6 3.4 1.3-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.3 6.8L12 17.2l-6 3.4 1.3-6.8L2.2 9.1l6.9-.8z"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.3 6.8L12 17.2l-6 3.4 1.3-6.8L2.2 9.1l6.9-.8z"/></svg>
+    </div>
+    <h1>京华红迹</h1>
+    <p>北京红色地标智能交互导览地图</p>
+    <span class="subline">数字地图承载京华红色记忆 · 交互体验赋能首都青年红色研学</span>
+</header>
+<nav aria-label="页面导航">
+    <button class="nav-btn active" data-target="page-map">地图总览</button>
+    <button class="nav-btn" data-target="page-route">智能游览路线规划</button>
+    <button class="nav-btn" data-target="page-archive">红色档案资源库</button>
+</nav>
+<main>
+    <!-- PAGE1 首页地图总览 -->
+    <section id="page-map" class="page-panel show" aria-labelledby="mapTitle">
+        <div class="section-head">
+            <h2 id="mapTitle">红色地标总览</h2>
+            <div class="en">BEIJING RED LANDMARKS</div>
+        </div>
+        <div class="map-card">
+            <div class="map-toolbar">
+                <div class="mt-title">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+                    北京红色地标导览
+                </div>
+                <div class="map-legend">
+                    <span class="legend-dot" aria-hidden="true"></span>
+                    <span>红色地标（<b class="hint-count">46</b> 处）</span>
+                </div>
+            </div>
+            <div id="map" class="map-canvas" role="application" aria-label="北京市可拖动交互地图">
+                <div id="mapLoading" class="map-loading">🕒 正在加载百度地图…</div>
+            </div>
+            <div id="mapFallback" aria-label="北京市红色地标示意地图">
+                <div class="fallback-note">📡 未能加载百度地图，已降级为离线示意地图：仍可点击红色圆点查看地标档案。</div>
+                <svg id="fbSvg" viewBox="0 0 960 660" role="img" aria-labelledby="fbTitle">
+                    <title id="fbTitle">北京红色地标示意地图</title>
+                    <defs>
+                        <style>
+                            .district{fill:#e9ecf2;stroke:#b4b9c3;stroke-width:1.2;}
+                        </style>
+                    </defs>
+                    <path class="district" d="M120,70 L270,45 L420,62 L530,110 L575,230 L520,370 L380,435 L210,400 L130,290 Z"/>
+                    <path class="district" d="M440,130 L560,142 L670,210 L635,330 L510,355 L430,275 Z"/>
+                    <path class="district" d="M290,220 L410,204 L475,286 L425,372 L310,354 L272,281 Z"/>
+                    <path class="district" d="M170,335 L330,312 L394,406 L320,482 L200,454 Z"/>
+                    <path class="district" d="M550,250 L710,272 L754,390 L640,440 L536,392 Z"/>
+                    <path class="district" d="M190,95 L350,72 L405,138 L330,200 L212,174 Z"/>
+                    <path class="district" d="M70,40 L235,20 L322,38 L280,130 L132,112 Z"/>
+                    <text x="480" y="625" text-anchor="middle" fill="#666" font-size="18">北京红色地标示意地图（离线降级版）</text>
+                </svg>
+            </div>
+            <div class="map-hint">
+                <span>🖱️ 拖拽 <b>平移地图</b></span>
+                <span>🔍 滚轮 / 右下角按钮 <b>缩放</b></span>
+                <span>📍 点击 <b>红色圆点</b> 查看地标档案</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- PAGE2 智能游览路线规划 -->
+    <section id="page-route" class="page-panel" aria-labelledby="routeTitle">
+        <div class="section-head">
+            <h2 id="routeTitle">智能游览路线规划</h2>
+            <div class="en">SMART SIGHTSEEING ROUTE PLANNING</div>
+        </div>
+
+        <!-- AI 智能体 -->
+        <div class="planner-card">
+            <div class="planner-head">
+                <span class="planner-icon" aria-hidden="true">🤖</span>
+                <div>
+                    <h3>游览路线推荐智能体</h3>
+                    <p>输入你想去的几个地方——红色地标或北京 130 处热门地点都可以（高校、公园、博物馆、寺庙古迹、商圈街区、郊区山水全收录），系统会自动按位置邻近度排出最顺路的推荐路线。</p>
+                </div>
+            </div>
+            <div class="planner-input-row">
+                <input type="text" id="plannerInput" placeholder="例如：故宫、颐和园、北大红楼、八达岭长城" aria-label="输入想去的地点"/>
+                <button id="plannerBtn" type="button">生成推荐路线</button>
+                <button id="plannerClearBtn" type="button">清空</button>
+            </div>
+            <div class="planner-quick" id="plannerQuick">
+                <span>快捷添加：</span>
+                <button class="qchip" type="button" data-name="北大红楼">北大红楼</button>
+                <button class="qchip" type="button" data-name="香山革命纪念地">香山革命纪念地</button>
+                <button class="qchip" type="button" data-name="长辛店二七纪念馆">长辛店二七纪念馆</button>
+                <button class="qchip" type="button" data-name="故宫博物院">故宫博物院</button>
+                <button class="qchip" type="button" data-name="颐和园">颐和园</button>
+                <button class="qchip" type="button" data-name="八达岭长城">八达岭长城</button>
+                <button class="qchip" type="button" data-name="环球影城">环球影城</button>
+                <button class="qchip" type="button" data-name="清华大学">清华大学</button>
+                <button class="qchip" type="button" data-name="北京大学">北京大学</button>
+                <button class="qchip" type="button" data-name="中国国家博物馆">中国国家博物馆</button>
+                <button class="qchip" type="button" data-name="香山公园">香山公园</button>
+                <button class="qchip" type="button" data-name="古北水镇">古北水镇</button>
+            </div>
+            <div id="plannerResult"></div>
+
+            <div id="routeMapWrap" style="display:none;">
+                <div class="route-map-title">🗺️ 推荐路线地图</div>
+                <div id="routeMapContainer" aria-label="推荐路线地图"></div>
+            </div>
+
+            <!-- 游览问答 -->
+            <div class="qa-block">
+                <div class="qa-head">
+                    <span class="qa-icon" aria-hidden="true">💬</span>
+                    <div>
+                        <h3>游览问答</h3>
+                        <p>问问智能体：怎么坐车、要不要预约、几点开放、好不好玩……</p>
+                    </div>
+                </div>
+                <div class="qa-input-row">
+                    <input type="text" id="qaInput" placeholder="例如：从圆明园到颐和园怎么走？故宫需要预约吗？故宫几点开放？" aria-label="向智能体提问"/>
+                    <button id="qaBtn" type="button">提问</button>
+                </div>
+                <div id="qaResult"></div>
+            </div>
+        </div>
+
+        <h3 class="rec-title">经典推荐路线</h3>
+        <div class="route-list">
+            <article class="route-item">
+                <span class="route-badge" aria-hidden="true">①</span>
+                <h3>老城街巷短途打卡路线<span class="route-tag">东城 · 西城 · 半日</span></h3>
+                <div class="route-path"><span>北大红楼</span><span class="arrow">→</span><span>蒙藏学校旧址</span><span class="arrow">→</span><span>京报馆旧址</span><span class="arrow">→</span><span>李大钊故居</span></div>
+                <div class="route-note">游览重点：沿着老北京胡同寻访建党早期革命足迹，感悟新文化运动与马克思主义早期在北京的传播历程；适合团支部半日主题实践活动。</div>
+            </article>
+            <article class="route-item">
+                <span class="route-badge" aria-hidden="true">②</span>
+                <h3>进京赶考主题党史研学路线<span class="route-tag">海淀 · 香山 · 一日</span></h3>
+                <div class="route-path"><span>香山革命纪念馆</span><span class="arrow">→</span><span>李大钊烈士陵园</span></div>
+                <div class="route-note">游览重点：重温党中央进驻北平、“进京赶考”筹备新中国成立的峥嵘岁月；体会革命先驱不畏牺牲的崇高精神，适合开展党史专题研学。</div>
+            </article>
+            <article class="route-item">
+                <span class="route-badge" aria-hidden="true">③</span>
+                <h3>工人与群众革命斗争主题路线<span class="route-tag">丰台 · 半日</span></h3>
+                <div class="route-path"><span>长辛店二七纪念馆</span><span class="arrow">→</span><span>陶然亭慈悲庵</span></div>
+                <div class="route-note">游览重点：回望北方早期工人运动的觉醒与斗争历史；了解二七大罢工，体会早期工人阶级的革命力量。</div>
+            </article>
+            <article class="route-item">
+                <span class="route-badge" aria-hidden="true">④</span>
+                <h3>抗战烽火追忆研学路线<span class="route-tag">延庆 · 海淀 · 一日长线</span></h3>
+                <div class="route-path"><span>平北抗日烈士纪念园</span><span class="arrow">→</span><span>黑山扈战斗纪念园</span><span class="arrow">→</span><span>一二·九运动纪念亭</span></div>
+                <div class="route-note">游览重点：回望华北敌后艰苦的抗日游击斗争历史，铭记北平地区的抗日救亡学生运动；适合中学、高校开展抗战历史主题教育实践。</div>
+            </article>
+            <article class="route-item">
+                <span class="route-badge" aria-hidden="true">⑤</span>
+                <h3>新文化与进步思想寻访路线<span class="route-tag">西城 · 东城 · 半日</span></h3>
+                <div class="route-path"><span>北平鲁迅故居</span><span class="arrow">→</span><span>《新青年》编辑部旧址</span><span class="arrow">→</span><span>京师女子师范旧址</span></div>
+                <div class="route-note">游览重点：探访新文化运动阵地，感受近代思想解放浪潮；体会进步知识分子冲破旧思想桎梏、唤醒民众的时代使命，适合文科研学小组走访。</div>
+            </article>
+            <article class="route-item">
+                <span class="route-badge" aria-hidden="true">⑥</span>
+                <h3>解放北平城市记忆主题路线<span class="route-tag">西郊至城区 · 一日</span></h3>
+                <div class="route-path"><span>双清别墅</span><span class="arrow">→</span><span>颐和园益寿堂</span><span class="arrow">→</span><span>北平和平解放谈判旧址</span></div>
+                <div class="route-note">游览重点：学习北平和平解放的重大历史意义；感悟党中央保护古城、和平接管城市的战略抉择，理解古都北京完整保存的历史价值。</div>
+            </article>
+            <article class="route-item">
+                <span class="route-badge" aria-hidden="true">⑦</span>
+                <h3>青年红色深度漫游长线<span class="route-tag">跨多城区 · 两日</span></h3>
+                <div class="route-path"><span>北大红楼</span><span class="arrow">→</span><span>陶然亭慈悲庵</span><span class="arrow">→</span><span>长辛店二七纪念馆</span><span class="arrow">→</span><span>香山革命纪念地</span><span class="arrow">→</span><span>李大钊烈士陵园</span></div>
+                <div class="route-note">游览重点：完整串联建党思想萌芽、工人运动、解放前夕建国筹备完整历史链条；适合高校团日、暑期社会实践、红色研学夏令营使用。</div>
+            </article>
+        </div>
+    </section>
+
+    <!-- PAGE3 红色档案资源库 -->
+    <section id="page-archive" class="page-panel" aria-labelledby="archiveTitle">
+        <div class="section-head">
+            <h2 id="archiveTitle">红色档案资源库</h2>
+            <div class="en">RED ARCHIVE LIBRARY</div>
+        </div>
+        <p class="archive-stat">共收录 <b>46</b> 处北京红色地标数字档案</p>
+        <div class="archive-wrap" id="archiveContainer"></div>
+    </section>
+</main>
+<footer>
+    <div class="f-title">《京华红迹——北京红色地标智能交互导览地图》</div>
+    <div class="f-sub">第十四届全国大学生数字媒体科技作品及创意竞赛</div>
+</footer>
+
+<script>
+(function(){
+    "use strict";
+    // ============ 46 处红色地标数据（含经纬度） ============
+    var landmarkData = {
+        "p1":{name:"北大红楼",area:"东城区五四大街",desc:"新文化运动重要阵地、五四运动策源地，马克思主义早期传播的重要场所，北京早期党组织孕育地。",tip:"场馆需提前预约参观，适合开展建党历史主题研学。",lat:39.9238,lng:116.4050},
+        "p2":{name:"李大钊故居（文华胡同）",area:"西城区文华胡同24号",desc:"李大钊同志在北京居住期间开展革命活动的居所，中国早期马克思主义传播、建党筹备的重要旧址。",tip:"胡同内革命旧址，感受先驱简朴的生活与火热的革命事业。",lat:39.9065,lng:116.3695},
+        "p3":{name:"陶然亭慈悲庵",area:"西城区陶然亭公园内",desc:"早年李大钊、毛泽东等进步青年曾在此集会，开展革命研讨活动，是北京建党前后重要革命活动地点。",tip:"位于城市公园之中，可以结合户外实践开展红色寻访。",lat:39.8760,lng:116.3900},
+        "p4":{name:"香山革命纪念地",area:"海淀区香山公园",desc:"中共中央进驻北平所在地；新中国成立前夕党中央在此指挥渡江战役、筹备新中国建立，是“进京赶考”的历史见证地。",tip:"纪念地范围较大，建议预留半天以上参观时间。",lat:39.9940,lng:116.1930},
+        "p5":{name:"长辛店二七纪念馆",area:"丰台区长辛店镇",desc:"北方工人运动的摇篮，二七大罢工重要旧址，见证早期中国工人阶级觉醒与斗争历史。",tip:"适合学习中国早期工人运动发展史。",lat:39.8380,lng:116.1610},
+        "p6":{name:"北平鲁迅故居",area:"西城区阜成门内宫门口二条",desc:"新文化运动阵地，鲁迅先生在此写下大量战斗杂文，助力思想启蒙。",tip:"老北京四合院旧址，感受新文化运动时期的思想风潮。",lat:39.9270,lng:116.3540},
+        "p7":{name:"平北抗日烈士纪念园",area:"延庆区",desc:"记录平北地区艰苦的敌后抗日游击斗争历史，缅怀华北抗日战场上牺牲的革命烈士。",tip:"开展抗日战争历史教育，缅怀革命英烈。",lat:40.4670,lng:115.9750},
+        "p8":{name:"李大钊烈士陵园",area:"海淀区万安公墓",desc:"李大钊烈士安葬纪念场所，是缅怀革命先驱、开展党史纪念教育的重要场馆。",tip:"适合开展缅怀先烈、致敬先驱主题团日活动。",lat:39.9560,lng:116.2110},
+        "p9":{name:"京报馆旧址",area:"西城区魏染胡同",desc:"邵飘萍主持《京报》所在地，进步新闻舆论阵地，为反帝反封建革命呐喊。",tip:"感受近代进步报刊对于革命思想传播的价值。",lat:39.8935,lng:116.3720},
+        "p10":{name:"蒙藏学校旧址",area:"西城区小石虎胡同",desc:"中国共产党早期开展少数民族革命工作的重要旧址，一大批少数民族青年在这里走上革命道路。",tip:"学习党的早期少数民族革命历史。",lat:39.9160,lng:116.3620},
+        "p11":{name:"《新青年》编辑部旧址",area:"东城区箭杆胡同",desc:"陈独秀在北京创办《新青年》，这里是新文化运动核心阵地，民主与科学思想由此广泛传播。",tip:"胡同狭小，适合小型研学小组实地走访。",lat:39.9145,lng:116.4000},
+        "p12":{name:"京师女子师范学堂旧址",area:"西城区新文化街",desc:"刘和珍等进步学生在此开展爱国学生运动；鲁迅曾于此任教，见证民国时期妇女思想觉醒。",tip:"了解近代女性学生爱国救亡运动历程。",lat:39.9035,lng:116.3700},
+        "p13":{name:"一二·九运动纪念亭",area:"海淀区樱桃沟",desc:"纪念1935年一二·九北平爱国学生抗日救亡运动，是青年学生爱国抗争的重要纪念场所。",tip:"位于山林景区内，适合户外红色教育。",lat:40.0020,lng:116.2070},
+        "p14":{name:"黑山扈战斗纪念园",area:"海淀区黑山扈",desc:"抗日战争时期平西抗日游击队在此与日伪军展开战斗，是北平近郊重要敌后抗战旧址。",tip:"山地纪念遗址，重温北平城郊抗日游击战历史。",lat:40.0500,lng:116.2460},
+        "p15":{name:"双清别墅",area:"海淀区香山",desc:"毛泽东同志进驻北平之后居住办公地；在此起草许多重要文件，指挥全国解放战争，谋划新中国建设。",tip:"属于香山革命纪念地组成部分，需要预约入园。",lat:39.9930,lng:116.1900},
+        "p16":{name:"颐和园益寿堂",area:"海淀区颐和园",desc:"1949年党中央在此宴请民主人士，共商建国大计，见证多党合作协商建国的历史瞬间。",tip:"位于皇家园林内部，结合园林参观开展党史学习。",lat:40.0000,lng:116.2720},
+        "p17":{name:"北平和平解放谈判旧址（六国饭店旧址）",area:"东交民巷",desc:"北平和谈重要场所，为实现北平和平解放、完整保护古都发挥关键作用。",tip:"位于东交民巷历史街区，适合城市历史研学。",lat:39.9070,lng:116.4170},
+        "p18":{name:"马骏烈士墓",area:"日坛公园朝阳区",desc:"马骏是五四运动天津领袖、早期共产党员，为革命事业英勇牺牲；墓地是缅怀革命英烈的红色场所。",tip:"城市公园内的烈士纪念点位，适合就近开展缅怀活动。",lat:39.9140,lng:116.4430},
+        "p19":{name:"常营革命烈士陵园",area:"朝阳区常营",desc:"安葬解放北平战役中牺牲的解放军指战员，缅怀平津战役中英勇献身的革命战士。",tip:"适合开展祭扫、爱国主义教育团日。",lat:39.9210,lng:116.5850},
+        "p20":{name:"潮白烈士陵园",area:"顺义区",desc:"纪念抗日战争、解放战争时期在京东地区英勇战斗牺牲的革命烈士。",tip:"远郊陵园点位，适合长途研学实践。",lat:40.1300,lng:116.6850},
+        "p21":{name:"白乙化烈士纪念馆",area:"密云区",desc:"白乙化为平北抗日斗争重要军事指挥员，纪念馆记录平北抗日游击斗争的艰苦岁月。",tip:"密云山区红色资源，开展敌后抗战主题研学。",lat:40.3550,lng:116.8950},
+        "p22":{name:"古北口长城抗战纪念馆",area:"密云古北口",desc:"1933年古北口长城抗战，中国军队奋勇阻击日军，是华北早期抗日御侮的重要战场旧址。",tip:"长城遗址结合抗战历史，感悟军民保家卫国精神。",lat:40.6250,lng:117.1600},
+        "p23":{name:"冀热察挺进军司令部旧址陈列馆",area:"门头沟区马栏村",desc:"抗战时期冀热察挺进军根据地指挥中心；平西抗日根据地的核心旧址。",tip:"京西山村红色旧址，学习敌后根据地建设历史。",lat:39.9680,lng:115.6250},
+        "p24":{name:"宛平城与中国人民抗日战争纪念馆",area:"丰台区宛平城",desc:"七七事变发生地；全民族抗日战争由此爆发，是开展抗战历史教育最重要的红色场馆。",tip:"国家级纪念馆，适合大规模学生集体研学参观。",lat:39.8490,lng:116.2070},
+        "p25":{name:"赵登禹将军墓",area:"西城区西道口",desc:"赵登禹将军是二十九军抗日将领，七七事变中壮烈殉国；是缅怀抗日爱国将领的纪念点位。",tip:"城市内烈士墓葬，缅怀抗日爱国将士。",lat:39.8520,lng:116.2180},
+        "p26":{name:"佟麟阁将军墓",area:"海淀区香山脚下",desc:"佟麟阁将军在卢沟桥事变中英勇牺牲，是全面抗战爆发之后第一位殉国的高级将领。",tip:"香山周边可以联动香山革命纪念地开展路线研学。",lat:39.9580,lng:116.2140},
+        "p27":{name:"北平军事调处执行部旧址",area:"东城区翠明庄",desc:"解放战争初期国共停战谈判的历史旧址，见证抗战胜利之后短暂和平谈判的历史。",tip:"位于东城城区，适合寻访解放战争前期历史。",lat:39.9110,lng:116.4070},
+        "p28":{name:"宋庆龄同志故居",area:"西城区后海北沿",desc:"新中国成立之后宋庆龄在北京生活工作的居所；见证新中国统一战线与妇女解放事业发展历程。",tip:"王府式故居，适合统一战线主题学习。",lat:39.9400,lng:116.3820},
+        "p29":{name:"郭沫若故居",area:"西城区什刹海",desc:"郭沫若晚年在北京的居所，见证新中国文化建设事业发展历程。",tip:"什刹海片区红色名人故居寻访。",lat:39.9345,lng:116.3760},
+        "p30":{name:"茅盾故居",area:"东城区后圆恩寺胡同",desc:"茅盾晚年在北京居住旧址；记录一代进步文学家投身革命文化事业的人生历程。",tip:"老北京胡同名人故居研学走访。",lat:39.9290,lng:116.4020},
+        "p31":{name:"老舍纪念馆（老舍故居）",area:"东城区丰富胡同",desc:"进步作家老舍在此创作大量作品，记录新中国初期北京城市文化变迁。",tip:"胡同故居，人文红色寻访主题。",lat:39.9160,lng:116.4130},
+        "p32":{name:"长辛店留法勤工俭学预备班旧址",area:"丰台区长辛店",desc:"毛泽东、蔡和森等进步青年曾关注此地；是留法勤工俭学运动在北京重要的预备办学旧址。",tip:"和二七纪念馆可以串联在同一条研学路线。",lat:39.8390,lng:116.1620},
+        "p33":{name:"北京革命活动纪念馆（北大二院旧址）",area:"东城区沙滩",desc:"早期北京社会主义青年团开展活动的重要旧址；建党前后青年革命活动重要场所。",tip:"紧邻北大红楼，适合连片走访。",lat:39.9225,lng:116.4060},
+        "p34":{name:"杨靖宇将军读书处旧址",area:"海淀区北京大学旧址区域",desc:"杨靖宇青年时期曾于北平求学，接受进步思想，由此走上东北抗日斗争道路。",tip:"大学校园内红色历史点位。",lat:39.9230,lng:116.4030},
+        "p35":{name:"三一八烈士墓",area:"海淀区圆明园遗址内",desc:"纪念1926年三一八惨案中牺牲的北平爱国学生，是近代学生反帝斗争的悲壮历史见证。",tip:"圆明园内部，结合近代国耻历史开展教育。",lat:40.0035,lng:116.3030},
+        "p36":{name:"护国寺街梅兰芳故居",area:"西城区护国寺",desc:"爱国艺术家梅兰芳在此生活；抗战时期蓄须明志拒绝为日伪演出，彰显民族气节。",tip:"艺术家的爱国精神主题学习。",lat:39.9360,lng:116.3810},
+        "p37":{name:"平西抗日根据地斋堂川革命旧址群",area:"门头沟斋堂",desc:"京西平西抗日根据地核心区域，多处抗战旧址连片分布，敌后抗日根据地建设的典型代表。",tip:"适合开展山区红色实践研学。",lat:39.9500,lng:115.6550},
+        "p38":{name:"房良联合县政府旧址",area:"房山区霞云岭",desc:"抗日战争时期房山、良乡地区敌后抗日民主政权旧址；见证敌后根据地政权建设。",tip:"京西南山区革命旧址。",lat:39.7550,lng:115.7800},
+        "p39":{name:"没有共产党就没有新中国纪念馆",area:"房山区霞云岭",desc:"著名歌曲诞生地；红色歌曲文化资源，承载群众革命宣传的时代记忆。",tip:"红色音乐思政研学，适合合唱主题团日。",lat:39.7520,lng:115.7780},
+        "p40":{name:"平津战役纪念馆（北京展区关联旧址）",area:"丰台南苑",desc:"南苑地区是平津战役解放北平外围重要作战区域；记录平津战役解放古都的战斗历程。",tip:"平津战役历史主题寻访点位。",lat:39.7880,lng:116.3860},
+        "p41":{name:"大兴烈士纪念碑",area:"大兴区",desc:"纪念在抗日战争、解放战争中大兴本地牺牲的革命志士。",tip:"京南区域本地红色纪念地标。",lat:39.7260,lng:116.3410},
+        "p42":{name:"通州西集革命烈士陵园",area:"通州区西集镇",desc:"安葬京东地区抗战以及解放战争时期牺牲的革命烈士。",tip:"东部远郊红色祭扫研学点位。",lat:39.7980,lng:116.7950},
+        "p43":{name:"顺义焦庄户地道战遗址纪念馆",area:"顺义区焦庄户",desc:"华北平原地道抗战的典范；敌后军民依靠地道顽强抗击日伪军的历史见证。",tip:"可以实地参观地道遗址，沉浸式抗战研学。",lat:40.2030,lng:116.7050},
+        "p44":{name:"鱼子山抗日战争纪念馆",area:"平谷区",desc:"平谷鱼子山是冀东抗日根据地的重要组成部分，见证冀东艰苦敌后抗战斗争。",tip:"京东山区抗战主题研学点位。",lat:40.1450,lng:117.1450},
+        "p45":{name:"昌延联合县政府旧址",area:"延庆区霹破石村",desc:"抗战时期昌平和延庆一带敌后抗日民主政权；平北根据地政权建设的历史见证。",tip:"北部山区乡村红色旧址。",lat:40.4200,lng:116.0300},
+        "p46":{name:"南口战役旧址",area:"昌平区南口",desc:"1937年南口战役，中国军队顽强阻击日军南下；是全面抗战初期华北重要阻击战遗址。",tip:"山地战场遗址，重温悲壮的华北抗战历史。",lat:40.2250,lng:116.1250}
+    };
+
+    // ============ 60 处北京热门景区数据（供智能体规划） ============
+    var scenicData = {
+        "s1":{name:"故宫博物院",area:"东城区景山前街",desc:"明清两代皇宫，世界现存规模最大的木结构宫殿建筑群，北京中轴线的核心历史文化遗产。",tip:"建议提前一周线上预约，参观约需3-4小时。",tag:"名胜古迹",lat:39.9163,lng:116.3972},
+        "s2":{name:"天安门广场",area:"东城区",desc:"世界上最大的城市中心广场，新中国的象征，观升旗、瞻仰人民英雄纪念碑。",tip:"需安检排队，清晨看升旗需提前到场。",tag:"现代地标",lat:39.9042,lng:116.3912},
+        "s3":{name:"天坛公园",area:"东城区天坛路",desc:"明清皇帝祭天祈谷之所，祈年殿为中国古建杰作，回音壁可体验奇妙声学。",tip:"联票含祈年殿，建议安排2-3小时。",tag:"名胜古迹",lat:39.8822,lng:116.4066},
+        "s4":{name:"颐和园",area:"海淀区新建宫门路",desc:"皇家园林博物馆，万寿山与昆明湖山水相依，长廊壁画精美绝伦。",tip:"园区较大，建议预留半天。",tag:"名胜古迹",lat:39.9998,lng:116.2755},
+        "s5":{name:"圆明园遗址公园",area:"海淀区清华西路",desc:"清代大型皇家园林遗址，西洋楼遗址铭记近代历史，大水法残柱为标志。",tip:"面积很大，可乘园内电瓶车。",tag:"历史遗址",lat:40.0098,lng:116.2945},
+        "s6":{name:"北海公园",area:"西城区文津街",desc:"中国现存最古老皇家园林之一，白塔耸立琼华岛，可荡舟太液池。",tip:"与景山相邻，可串联游览。",tag:"名胜古迹",lat:39.9256,lng:116.3896},
+        "s7":{name:"景山公园",area:"西城区景山西街",desc:"俯瞰故宫全景的最佳观景点，万春亭位于北京中轴线制高点。",tip:"登万春亭看故宫日落。",tag:"名胜古迹",lat:39.9253,lng:116.3976},
+        "s8":{name:"八达岭长城",area:"延庆区",desc:"明长城精华段，世界文化遗产，城墙蜿蜒于崇山峻岭之间，气势磅礴。",tip:"可乘缆车或索道，节假日建议早到。",tag:"长城关隘",lat:40.3540,lng:116.0128},
+        "s9":{name:"慕田峪长城",area:"怀柔区",desc:"长城沿线保存最完好的明长城段之一，山势起伏、敌楼密集，游客相对较少。",tip:"适合家庭与深度徒步，建议乘摆渡车入园。",tag:"长城关隘",lat:40.4310,lng:116.5530},
+        "s10":{name:"居庸关长城",area:"昌平区",desc:"“天下第一雄关”，云台石刻精美，关沟古道两山对峙。",tip:"距市区较近，可结合明十三陵游览。",tag:"长城关隘",lat:40.3030,lng:116.2220},
+        "s11":{name:"明十三陵",area:"昌平区",desc:"明代十三位皇帝陵寝群，定陵地宫开放，长陵规模宏大。",tip:"定陵地宫与长陵为主要开放点。",tag:"名胜古迹",lat:40.2833,lng:116.2167},
+        "s12":{name:"国家体育场（鸟巢）",area:"朝阳区",desc:"2008北京奥运会主体育场，钢结构编织外观，可登顶俯瞰奥体公园。",tip:"夜景灯光最美。",tag:"现代地标",lat:39.9915,lng:116.3969},
+        "s13":{name:"国家游泳中心（水立方）",area:"朝阳区",desc:"奥运游泳场馆，蓝色气泡膜建筑，可体验冰上项目。",tip:"与鸟巢相邻，建议傍晚一并游览。",tag:"现代地标",lat:39.9927,lng:116.3928},
+        "s14":{name:"奥林匹克森林公园",area:"朝阳区",desc:"北京中轴线北端的大型城市公园，森林氧吧，健身步道环绕。",tip:"免费开放，适合晨跑与野餐。",tag:"自然公园",lat:40.0200,lng:116.3900},
+        "s15":{name:"798艺术区",area:"朝阳区",desc:"由老工业厂房改造的当代艺术园区，画廊、艺术展览、创意市集聚集。",tip:"展馆众多，建议预留半天。",tag:"文化艺术",lat:39.9842,lng:116.4930},
+        "s16":{name:"什刹海",area:"西城区",desc:"老北京风情水域，胡同、王府与酒吧街环绕，可划船游湖。",tip:"傍晚灯火亮起最有氛围。",tag:"人文街区",lat:39.9390,lng:116.3830},
+        "s17":{name:"南锣鼓巷",area:"东城区",desc:"北京最古老街区之一，蜈蚣状胡同格局，文创小店与特色小吃聚集。",tip:"节假日人流大，建议错峰前往。",tag:"人文街区",lat:39.9380,lng:116.4030},
+        "s18":{name:"恭王府",area:"西城区",desc:"清代规模最大的王府，“一座恭王府，半部清代史”，花园精美。",tip:"门票需实名预约。",tag:"名胜古迹",lat:39.9370,lng:116.3790},
+        "s19":{name:"雍和宫",area:"东城区",desc:"藏传佛教皇家寺院，乾隆出生地，香火鼎盛，木雕五百罗汉山为三绝之一。",tip:"尊重宗教礼仪，殿内佛像禁止拍摄。",tag:"宗教文化",lat:39.9470,lng:116.4170},
+        "s20":{name:"孔庙和国子监博物馆",area:"东城区",desc:"元明清三代皇家祭孔之地与最高学府，进士题名碑林立。",tip:"与雍和宫仅一街之隔，可串联游览。",tag:"人文街区",lat:39.9480,lng:116.4170},
+        "s21":{name:"前门大街",area:"西城区",desc:"老北京商业街，正阳门箭楼、大栅栏老字号云集，市井烟火浓厚。",tip:"可乘铛铛车，品尝老字号小吃。",tag:"人文街区",lat:39.8990,lng:116.3980},
+        "s22":{name:"王府井商业街",area:"东城区",desc:"北京最著名商业街，百货大楼与老字号齐聚，夜景繁华。",tip:"逛街购物、品尝北京小吃。",tag:"现代地标",lat:39.9090,lng:116.4100},
+        "s23":{name:"北京动物园",area:"西城区西直门外",desc:"中国最大的城市动物园之一，大熊猫馆、海洋馆人气最高。",tip:"亲子遛娃首选，建议预留半天。",tag:"亲子游",lat:39.9400,lng:116.3350},
+        "s24":{name:"北京海洋馆",area:"海淀区",desc:"亚洲著名内陆海洋馆，有海洋剧场表演与丰富的海洋生物展示。",tip:"看表演前先查询场次时间。",tag:"亲子游",lat:39.9400,lng:116.3340},
+        "s25":{name:"世界公园",area:"丰台区",desc:"微缩世界名胜景观主题公园，一天“逛遍”世界各地。",tip:"适合拍照打卡。",tag:"主题乐园",lat:39.8080,lng:116.2970},
+        "s26":{name:"香山公园",area:"海淀区香山",desc:"北京著名的山林公园，秋季红叶闻名全国，碧云寺、香炉峰可攀。",tip:"10月中旬至11月上旬为红叶季。",tag:"自然公园",lat:39.9960,lng:116.1920},
+        "s27":{name:"国家植物园",area:"海淀区",desc:"汇集南北植物科普展览，卧佛寺古刹、樱桃沟水杉林，四季花展不断。",tip:"春季桃花节与秋季菊花展人气高。",tag:"自然公园",lat:40.0050,lng:116.2140},
+        "s28":{name:"玉渊潭公园",area:"海淀区",desc:"以樱花闻名京城，中央电视塔隔湖相望，是春季赏樱胜地。",tip:"3月底至4月中旬樱花节。",tag:"自然公园",lat:39.9220,lng:116.3170},
+        "s29":{name:"朝阳公园",area:"朝阳区",desc:"北京四环内最大的城市公园之一，湖面开阔，游乐设施齐全。",tip:"适合家庭休闲与露营。",tag:"自然公园",lat:39.9330,lng:116.4860},
+        "s30":{name:"北京欢乐谷",area:"朝阳区",desc:"大型现代主题乐园，过山车、激流勇进等游乐项目丰富。",tip:"学生票有优惠，建议错峰游玩。",tag:"主题乐园",lat:39.8640,lng:116.4990},
+        "s31":{name:"石景山游乐园",area:"石景山区",desc:"北京老牌游乐园，摩天轮与过山车经典项目，适合亲子。",tip:"乘摩天轮可俯瞰京西。",tag:"主题乐园",lat:39.9070,lng:116.2060},
+        "s32":{name:"首钢园",area:"石景山区",desc:"百年首钢工业遗址改造的科幻园区，冬奥大跳台所在地，工业风打卡圣地。",tip:"夜景灯光酷炫，免费入园。",tag:"现代地标",lat:39.9130,lng:116.1830},
+        "s33":{name:"北京环球影城",area:"通州区",desc:"全球知名主题乐园，哈利·波特、变形金刚等主题园区，沉浸式体验。",tip:"门票较贵，建议买速通票、尽早入园。",tag:"主题乐园",lat:39.8510,lng:116.6710},
+        "s34":{name:"古北水镇",area:"密云区",desc:"依司马台长城而建的北方水乡古镇，夜景灯光秀与长城夜游是特色。",tip:"距市区较远，建议住一晚。",tag:"古镇度假",lat:40.6400,lng:117.1100},
+        "s35":{name:"雁栖湖",area:"怀柔区",desc:"国际会都所在地，湖光山色，可环湖骑行、乘船游湖。",tip:"适合周末休闲，周边民宿多。",tag:"自然风光",lat:40.3820,lng:116.5500},
+        "s36":{name:"红螺寺",area:"怀柔区",desc:"千年古刹，红螺山翠竹古松，秋季红叶与祈福文化闻名。",tip:"可登山礼佛，也可乘滑道下山。",tag:"宗教文化",lat:40.4270,lng:116.6300},
+        "s37":{name:"青龙峡",area:"怀柔区",desc:"长城脚下的峡谷景区，山水兼备，可乘船、蹦极。",tip:"夏季漂流、秋季观景。",tag:"自然风光",lat:40.4750,lng:116.6000},
+        "s38":{name:"龙庆峡",area:"延庆区",desc:"塞外漓江，乘船穿行于群山峡谷之间，冬季冰灯节闻名。",tip:"冬季冰灯节为特色体验。",tag:"自然风光",lat:40.5600,lng:115.9400},
+        "s39":{name:"百里山水画廊",area:"延庆区",desc:"沿白河峡谷绵延百里的自然风景带，骑行与自驾胜地。",tip:"适合秋季自驾，沿途村镇有民宿。",tag:"自然风光",lat:40.6300,lng:116.3300},
+        "s40":{name:"京东大峡谷",area:"平谷区",desc:"北京东部著名峡谷景区，瀑布深潭相连，可乘缆车登顶。",tip:"夏季避暑戏水好去处。",tag:"自然风光",lat:40.2800,lng:117.2000},
+        "s41":{name:"京东石林峡",area:"平谷区",desc:"石林奇观与千米玻璃观景台，“UFO”玻璃栈道俯瞰山谷。",tip:"玻璃观景台需另购票。",tag:"自然风光",lat:40.2900,lng:117.2300},
+        "s42":{name:"金海湖",area:"平谷区",desc:"北京最大人工湖，湖光山色，可游船、垂钓、露营。",tip:"适合亲子露营与水上运动。",tag:"自然风光",lat:40.1700,lng:117.2400},
+        "s43":{name:"十渡风景区",area:"房山区",desc:"拒马河峡谷风光，玻璃栈道、蹦极、漂流等户外项目众多。",tip:"15渡为精华段，夏季戏水旺季。",tag:"自然风光",lat:39.6600,lng:115.6200},
+        "s44":{name:"云居寺",area:"房山区",desc:"以石经、板经、纸经“三绝”闻名，房山石经刻经千年。",tip:"与石经山相邻，可一并游览。",tag:"宗教文化",lat:39.6100,lng:115.8900},
+        "s45":{name:"周口店北京人遗址",area:"房山区",desc:"古人类化石发现地，世界文化遗产，“北京人”头盖骨发现处。",tip:"科普研学好去处。",tag:"历史遗址",lat:39.6900,lng:115.9350},
+        "s46":{name:"上方山国家森林公园",area:"房山区",desc:"华北地区保存完好的原始次生林之一，古塔古刹众多。",tip:"登山徒步，春季山花烂漫。",tag:"自然公园",lat:39.7000,lng:115.8100},
+        "s47":{name:"潭柘寺",area:"门头沟区",desc:"“先有潭柘寺，后有北京城”，北京最古老寺院之一，银杏古树闻名。",tip:"秋季银杏金黄是打卡高峰。",tag:"宗教文化",lat:39.9000,lng:116.0300},
+        "s48":{name:"戒台寺",area:"门头沟区",desc:"以“天下第一戒坛”闻名，千年古松与佛教戒坛文化。",tip:"与潭柘寺相距不远，可串联游览。",tag:"宗教文化",lat:39.8550,lng:116.0400},
+        "s49":{name:"灵山",area:"门头沟区",desc:"北京最高峰（海拔2303米），高山草甸，云海星空。",tip:"昼夜温差大，需备保暖衣物。",tag:"自然风光",lat:40.0300,lng:115.4800},
+        "s50":{name:"百花山",area:"门头沟区",desc:"高山花卉与草甸风光，夏秋山花烂漫，可看日出云海。",tip:"部分路段盘山弯道较多。",tag:"自然公园",lat:39.8500,lng:115.5700},
+        "s51":{name:"中国国家博物馆",area:"东城区天安门广场东侧",desc:"中华文明历史与艺术殿堂，镇馆之宝如后母戊鼎、四羊方尊。",tip:"免费但需提前预约，建议早到。",tag:"博物馆",lat:39.9080,lng:116.4050},
+        "s52":{name:"首都博物馆",area:"西城区",desc:"北京历史文化的专题博物馆，青铜器与老北京民俗展丰富。",tip:"免费预约，适合雨天安排。",tag:"博物馆",lat:39.9030,lng:116.3380},
+        "s53":{name:"中国科学技术馆",area:"朝阳区",desc:"国家级科技馆，儿童科学乐园、特效影院人气极高。",tip:"亲子科普首选，建议预留大半天。",tag:"博物馆",lat:40.0020,lng:116.4030},
+        "s54":{name:"中国美术馆",area:"东城区",desc:"国家级美术殿堂，藏有大量近现代名家书画作品。",tip:"免费预约，展期轮换。",tag:"博物馆",lat:39.9290,lng:116.4100},
+        "s55":{name:"中国人民革命军事博物馆",area:"海淀区",desc:"全国最大的军事类博物馆，飞机坦克等大型兵器陈列震撼。",tip:"免费预约，军事迷必去。",tag:"博物馆",lat:39.9080,lng:116.3280},
+        "s56":{name:"北京天文馆",area:"西城区",desc:"天文科普殿堂，天象厅球幕影院、陨石与望远镜展览。",tip:"亲子天文科普好去处。",tag:"博物馆",lat:39.9400,lng:116.3390},
+        "s57":{name:"国家图书馆",area:"海淀区",desc:"亚洲最大图书馆，古籍馆藏丰富，新馆建筑现代。",tip:"阅读自习需提前预约座位。",tag:"博物馆",lat:39.9450,lng:116.3220},
+        "s58":{name:"北京世园公园",area:"延庆区",desc:"世界园艺博览会会址改造的公园，各国展园荟萃，花海壮观。",tip:"夏季花卉最盛，园区较大。",tag:"自然公园",lat:40.4700,lng:115.9200},
+        "s59":{name:"大运河森林公园",area:"通州区",desc:"千年大运河南北贯通的历史地标公园，可骑行、露营。",tip:"适合骑行与亲子露营。",tag:"自然公园",lat:39.9100,lng:116.7000},
+        "s60":{name:"南海子公园",area:"大兴区",desc:"北京最大的湿地公园，麋鹿苑可观麋鹿，湿地生态良好。",tip:"免费开放，适合家庭周末游。",tag:"自然公园",lat:39.7700,lng:116.4400},
+        "s61":{name:"清华大学",area:"海淀区清华园",desc:"中国顶尖高等学府，清华园、二校门、大礼堂、清华学堂等百年建筑群，毗邻圆明园。",tip:"参观需通过小程序预约，校内可骑行共享单车游览。",tag:"高校",lat:40.0011,lng:116.3267},
+        "s62":{name:"北京大学",area:"海淀区颐和园路",desc:"中国最高学府之一，未名湖、博雅塔、红楼为标志景观，校园兼具古典园林之美。",tip:"参观需提前预约，未名湖畔四季皆宜。",tag:"高校",lat:39.9876,lng:116.3055},
+        "s63":{name:"中国人民大学",area:"海淀区中关村大街59号",desc:"以人文社会科学见长的著名高校，校园内明德楼、世纪馆建筑现代。",tip:"校内可骑行游览，周边中关村商圈便利。",tag:"高校",lat:39.9718,lng:116.3112},
+        "s64":{name:"北京师范大学",area:"海淀区新街口外大街19号",desc:"百年师范名校，京师学堂、辅仁旧址承载深厚人文底蕴。",tip:"校园开放时段可预约参观。",tag:"高校",lat:39.9630,lng:116.3660},
+        "s65":{name:"北京航空航天大学",area:"海淀区学院路37号",desc:"航空航天特色名校，校园内陈列有真机模型，航空航天博物馆人气高。",tip:"校内航空航天博物馆值得一看。",tag:"高校",lat:39.9813,lng:116.3475},
+        "s66":{name:"北京理工大学",area:"海淀区中关村南大街5号",desc:"国防科技特色名校，中心教学楼、良乡校区均有特色。",tip:"校园开放时段可参观。",tag:"高校",lat:39.9554,lng:116.3070},
+        "s67":{name:"北京邮电大学",area:"海淀区西土城路10号",desc:"信息通信领域名校，校园紧邻元大都城垣遗址公园。",tip:"可结合元大都公园一并游览。",tag:"高校",lat:39.9670,lng:116.3500},
+        "s68":{name:"北京交通大学",area:"海淀区上园村3号",desc:"交通领域百年名校，红果园校区绿树成荫，紧邻西直门。",tip:"参观可关注学校开放日。",tag:"高校",lat:39.9560,lng:116.3380},
+        "s69":{name:"北京科技大学",area:"海淀区学院路30号",desc:"钢铁冶金特色名校，校园与北京科技大学体育馆相邻。",tip:"学院路高校云集，可串联多校打卡。",tag:"高校",lat:39.9920,lng:116.3540},
+        "s70":{name:"北京工业大学",area:"朝阳区平乐园100号",desc:"市属重点高校，奥运羽毛球馆曾承办奥运赛事，校园开阔。",tip:"校园开放时段可参观。",tag:"高校",lat:39.8640,lng:116.4760},
+        "s71":{name:"中国农业大学",area:"海淀区清华东路17号",desc:"农业科学最高学府，校园内有农业大学博物馆。",tip:"可结合附近高校群游览。",tag:"高校",lat:40.0040,lng:116.3470},
+        "s72":{name:"北京林业大学",area:"海淀区清华东路35号",desc:"林学园林特色名校，校园绿植丰富，四季景色宜人。",tip:"邻近奥林匹克公园与圆明园。",tag:"高校",lat:40.0020,lng:116.3500},
+        "s73":{name:"中国传媒大学",area:"朝阳区定福庄东街1号",desc:"传媒艺术名校，校园内星光大道、大阅城与传媒博物馆颇具特色。",tip:"传媒博物馆免费开放。",tag:"高校",lat:39.9130,lng:116.5520},
+        "s74":{name:"中央民族大学",area:"海淀区中关村南大街27号",desc:"民族高等教育殿堂，校园融合多民族文化元素。",tip:"校园开放时段可参观。",tag:"高校",lat:39.9620,lng:116.3190},
+        "s75":{name:"对外经济贸易大学",area:"朝阳区惠新东街10号",desc:"国际贸易特色名校，校园建筑现代，四季银杏迷人。",tip:"秋季银杏大道是拍照热门。",tag:"高校",lat:39.9760,lng:116.4290},
+        "s76":{name:"首都师范大学",area:"海淀区西三环北路105号",desc:"首都师范名校，校园紧邻紫竹院公园。",tip:"可结合紫竹院公园游览。",tag:"高校",lat:39.9320,lng:116.3050},
+        "s77":{name:"北京外国语大学",area:"海淀区西三环北路2号",desc:"外语人才培养重镇，“外交官的摇篮”，多语种文化氛围浓厚。",tip:"校园开放时段可参观。",tag:"高校",lat:39.9510,lng:116.3120},
+        "s78":{name:"中央美术学院",area:"朝阳区花家地南街8号",desc:"中国美术最高学府，美术馆藏有大量优秀作品，校园建筑极具设计感。",tip:"央美美术馆展览丰富，值得专程看展。",tag:"高校",lat:39.9950,lng:116.4860},
+        "s79":{name:"北京电影学院",area:"海淀区西土城路4号",desc:"电影人才摇篮，校园内影视氛围浓厚，常有学术放映与展览。",tip:"电影资料馆常有经典影片放映。",tag:"高校",lat:39.9690,lng:116.3490},
+        "s80":{name:"中央戏剧学院",area:"东城区东棉花胡同39号",desc:"戏剧艺术最高学府，位于南锣鼓巷历史文化保护街区。",tip:"可结合南锣鼓巷游览，偶遇校园演出季。",tag:"高校",lat:39.9390,lng:116.4070},
+        "s81":{name:"紫竹院公园",area:"海淀区中关村南大街35号",desc:"以竹景闻名的城市公园，湖面开阔，可划船赏竹。",tip:"免费开放，适合晨练散步。",tag:"自然公园",lat:39.9420,lng:116.3060},
+        "s82":{name:"陶然亭公园",area:"西城区太平街19号",desc:"融古建与园林于一体，园内慈悲庵为革命活动旧址，湖心岛可泛舟。",tip:"春季海棠与秋季银杏景色佳。",tag:"自然公园",lat:39.8800,lng:116.3850},
+        "s83":{name:"龙潭公园",area:"东城区龙潭路8号",desc:"以龙文化为主题的城市公园，湖面开阔，龙字碑林颇具特色。",tip:"免费开放，适合亲子游玩。",tag:"自然公园",lat:39.8790,lng:116.4360},
+        "s84":{name:"地坛公园",area:"东城区安定门外大街",desc:"明清皇帝祭地之所，古柏林苍翠，秋季银杏大道闻名。",tip:"11月银杏季最美，可结合雍和宫游览。",tag:"自然公园",lat:39.9500,lng:116.4060},
+        "s85":{name:"日坛公园",area:"朝阳区日坛北路6号",desc:"明清帝王祭日之坛，园内古树参天，晨练氛围浓厚。",tip:"免费开放，紧邻CBD商圈。",tag:"自然公园",lat:39.9160,lng:116.4370},
+        "s86":{name:"月坛公园",area:"西城区月坛北街甲6号",desc:"明清帝王祭月之坛，园内小巧精致，闹中取静。",tip:"免费开放，适合傍晚散步。",tag:"自然公园",lat:39.9210,lng:116.3490},
+        "s87":{name:"元大都城垣遗址公园",area:"朝阳区北土城路",desc:"依托元代城墙遗址建成的带状公园，海棠花溪春季美不胜收。",tip:"4月海棠花节人气高，可沿河骑行。",tag:"历史遗址",lat:39.9780,lng:116.3990},
+        "s88":{name:"温榆河公园",area:"朝阳区孙河镇",desc:"城市绿肺大型郊野公园，湿地花海、露营草坪开阔。",tip:"适合周末露营与亲子骑行。",tag:"自然公园",lat:40.0500,lng:116.5100},
+        "s89":{name:"城市绿心森林公园",area:"通州区",desc:"副中心大型城市公园，四季花海与生态湿地，北京艺术中心近在咫尺。",tip:"可结合北京艺术中心、大运河博物馆游览。",tag:"自然公园",lat:39.8650,lng:116.6900},
+        "s90":{name:"老山城市休闲公园",area:"石景山区",desc:"奥运场馆周边山地公园，绿道环绕，可远眺城区。",tip:"免费开放，适合登山健身。",tag:"自然公园",lat:39.8930,lng:116.2200},
+        "s91":{name:"中国铁道博物馆",area:"朝阳区酒仙桥北路1号",desc:"铁路主题博物馆，馆藏各时期机车车辆，环形展厅气势震撼。",tip:"紧邻798艺术区，可串联游览。",tag:"博物馆",lat:40.0000,lng:116.5070},
+        "s92":{name:"中国航空博物馆",area:"昌平区大汤山",desc:"亚洲规模最大的航空博物馆，露天陈列百余架各型飞机。",tip:"免费预约，军事航空爱好者必去。",tag:"博物馆",lat:40.2500,lng:116.3700},
+        "s93":{name:"民航博物馆",area:"朝阳区机场辅路",desc:"民航主题博物馆，馆藏飞机实物与民航发展史，可模拟驾驶。",tip:"邻近首都机场，可结合顺义游玩。",tag:"博物馆",lat:40.1200,lng:116.5200},
+        "s94":{name:"中国电影博物馆",area:"朝阳区南影路9号",desc:"世界最大国家级电影专业博物馆，IMAX巨幕与电影发展史陈列。",tip:"IMAX影厅体验震撼，建议提前购票。",tag:"博物馆",lat:40.0300,lng:116.5300},
+        "s95":{name:"北京汽车博物馆",area:"丰台区南四环西路126号",desc:"汽车科技与文化主题博物馆，老爷车收藏丰富，互动体验多。",tip:"亲子科普好去处，可玩性高。",tag:"博物馆",lat:39.8410,lng:116.2900},
+        "s96":{name:"中国印刷博物馆",area:"大兴区兴华大街三段30号",desc:"印刷术发展史专题博物馆，从雕版到数字印刷完整呈现。",tip:"适合了解中华印刷文明。",tag:"博物馆",lat:39.8000,lng:116.3500},
+        "s97":{name:"中国地质博物馆",area:"西城区西四羊肉胡同15号",desc:"地质标本殿堂，宝石厅璀璨夺目，恐龙化石与矿物陈列丰富。",tip:"宝石厅最受欢迎，建议预留2小时。",tag:"博物馆",lat:39.9230,lng:116.3740},
+        "s98":{name:"北京自然博物馆",area:"东城区天桥南大街126号",desc:"古生物与自然科普殿堂，恐龙骨架、古人类展厅经典，深受亲子欢迎。",tip:"免费但需提前预约，周末票紧俏。",tag:"博物馆",lat:39.8820,lng:116.4030},
+        "s99":{name:"北京古观象台",area:"东城区建国门内大街",desc:"明清皇家天文台，青铜天文仪器精美，可登台远眺。",tip:"天文爱好者打卡地，毗邻中国尊。",tag:"博物馆",lat:39.9070,lng:116.4350},
+        "s100":{name:"中国妇女儿童博物馆",area:"东城区北极阁路9号",desc:"以妇女儿童为主题的国家级博物馆，展览温馨有趣。",tip:"免费预约，亲子家庭适合。",tag:"博物馆",lat:39.9100,lng:116.4240},
+        "s101":{name:"北京鲁迅博物馆",area:"西城区阜成门内大街宫门口二条19号",desc:"鲁迅故居所在地，院中枣树、老虎尾巴书屋保存完好，展陈丰富。",tip:"文学爱好者必访，需预约。",tag:"博物馆",lat:39.9350,lng:116.3590},
+        "s102":{name:"中国钱币博物馆",area:"西城区西交民巷17号",desc:"钱币与金融史专题博物馆，馆舍为百年银行旧址，古钱币收藏系统完整。",tip:"老建筑本身即文物，可结合前门游览。",tag:"博物馆",lat:39.9000,lng:116.3980},
+        "s103":{name:"法源寺",area:"西城区法源寺前街7号",desc:"北京最古老的名刹之一，悯忠寺历史厚重，丁香花季闻名，现为中国佛学院所在地。",tip:"4月丁香盛开时最美。",tag:"宗教文化",lat:39.8890,lng:116.3610},
+        "s104":{name:"白云观",area:"西城区白云观街9号",desc:"全真道教祖庭，香火鼎盛，春节庙会民俗浓郁。",tip:"摸石猴是传统民俗体验。",tag:"宗教文化",lat:39.8990,lng:116.3320},
+        "s105":{name:"天宁寺",area:"西城区天宁寺前街甲3号",desc:"辽代古刹，天宁寺塔为北京现存最古老的地上建筑之一。",tip:"古塔沧桑，适合古建爱好者。",tag:"宗教文化",lat:39.8960,lng:116.3400},
+        "s106":{name:"东岳庙",area:"朝阳区朝阳门外大街141号",desc:"道教正一派华北最大庙宇，庙会文化丰富，神像雕塑精美。",tip:"民俗文化与古建兼得。",tag:"宗教文化",lat:39.9240,lng:116.4370},
+        "s107":{name:"智化寺",area:"东城区禄米仓胡同5号",desc:"明代古刹，京音乐为国家级非遗，藻井精美绝伦。",tip:"京音乐表演是必看体验。",tag:"宗教文化",lat:39.9180,lng:116.4290},
+        "s108":{name:"大觉寺",area:"海淀区苏家坨镇",desc:"辽代古刹，千年银杏与古玉兰闻名，深山藏古寺意境悠远。",tip:"11月银杏金黄，玉兰花开在4月。",tag:"宗教文化",lat:40.1110,lng:116.1160},
+        "s109":{name:"碧云寺",area:"海淀区香山公园内",desc:"香山脚下古刹，金刚宝座塔庄严，孙中山先生衣冠冢所在。",tip:"与香山公园联游，登塔可俯瞰香山。",tag:"宗教文化",lat:39.9950,lng:116.1900},
+        "s110":{name:"卧佛寺",area:"海淀区国家植物园内",desc:"始建于唐代的古刹，铜铸卧佛庄严，腊梅与古树闻名。",tip:"冬季腊梅盛开，可结合植物园游览。",tag:"宗教文化",lat:40.0050,lng:116.2140},
+        "s111":{name:"钟鼓楼",area:"东城区钟楼湾临字9号",desc:"元明清报时中心，鼓楼登楼可俯瞰中轴线，钟楼可看大钟。",tip:"鼓楼周边胡同巷弄值得漫步。",tag:"名胜古迹",lat:39.9410,lng:116.4070},
+        "s112":{name:"正阳门",area:"东城区前门大街北端",desc:"北京内城正门，城楼与箭楼巍峨，中轴线地标。",tip:"可登城楼参观，与天安门相邻。",tag:"名胜古迹",lat:39.8990,lng:116.3980},
+        "s113":{name:"三里屯太古里",area:"朝阳区三里屯路19号",desc:"时尚潮流聚集地，开放式街区品牌旗舰店云集，夜生活丰富。",tip:"傍晚至夜间氛围最佳。",tag:"现代地标",lat:39.9370,lng:116.4550},
+        "s114":{name:"蓝色港湾",area:"朝阳区朝阳公园路6号",desc:"欧式风情商业街区，临湖夜景与圣诞灯光闻名。",tip:"圣诞季灯光节人气极高。",tag:"现代地标",lat:39.9450,lng:116.4750},
+        "s115":{name:"北京CBD国贸商圈",area:"朝阳区建国门外大街1号",desc:"北京商务中心区，中国尊、央视大楼等摩天建筑群，空中观景平台视野开阔。",tip:"华灯初上时CBD夜景壮丽。",tag:"现代地标",lat:39.9090,lng:116.4580},
+        "s116":{name:"西单商业街",area:"西城区西单北大街",desc:"京城老牌商业街，百货商场与年轻潮流店铺并存。",tip:"逛街购物便捷，地铁直达。",tag:"现代地标",lat:39.9130,lng:116.3740},
+        "s117":{name:"中关村",area:"海淀区中关村大街",desc:"中国科技创新中心，中关村创业大街、互联网企业聚集地。",tip:"可体验科技氛围，邻近高校群。",tag:"现代地标",lat:39.9760,lng:116.3160},
+        "s118":{name:"琉璃厂文化街",area:"西城区南新华街",desc:"百年文房四宝与古玩书画街区，荣宝斋、中国书店老字号林立。",tip:"文人墨客必访，可淘字画印章。",tag:"人文街区",lat:39.8930,lng:116.3890},
+        "s119":{name:"五道营胡同",area:"东城区安定门内",desc:"文艺胡同典范，咖啡馆、手作店、设计小店密布，比南锣更安静。",tip:"适合午后闲逛拍照。",tag:"人文街区",lat:39.9450,lng:116.4110},
+        "s120":{name:"簋街",area:"东城区东直门内大街",desc:"京城美食一条街，麻辣小龙虾与深夜食堂闻名，烟火气十足。",tip:"夜宵时间最热闹，慎点微辣起步。",tag:"人文街区",lat:39.9410,lng:116.4300},
+        "s121":{name:"凤凰岭自然风景区",area:"海淀区苏家坨镇",desc:"京西著名登山胜地，奇峰怪石与龙泉寺相映，秋季红叶壮美。",tip:"山势陡峭，需穿舒适登山鞋。",tag:"自然风光",lat:40.0860,lng:116.0860},
+        "s122":{name:"八大处公园",area:"石景山区八大处路",desc:"京西古刹群景区，八座古刹散布山林，缆车滑道可登高望远。",tip:"春节庙会与秋季红叶是两大亮点。",tag:"自然公园",lat:39.9750,lng:116.1980},
+        "s123":{name:"西山国家森林公园",area:"海淀区闵庄路",desc:"太行山余脉城市森林公园，鬼笑石观景台可俯瞰北京城。",tip:"傍晚登鬼笑石看日落与城市夜景。",tag:"自然公园",lat:39.9530,lng:116.2250},
+        "s124":{name:"蟒山国家森林公园",area:"昌平区十三陵水库东",desc:"十三陵畔山林公园，大佛与登山步道，可远眺水库。",tip:"可与十三陵、昌平城区串联游览。",tag:"自然公园",lat:40.2710,lng:116.2840},
+        "s125":{name:"云蒙山国家森林公园",area:"密云区石城镇",desc:"京北山水画廊，山势雄伟溪瀑众多，秋季层林尽染。",tip:"山路较长，适合登山爱好者。",tag:"自然风光",lat:40.5100,lng:116.6800},
+        "s126":{name:"雾灵山",area:"密云区与河北兴隆交界",desc:"燕山主峰之一，夏季清凉避暑，云海日出壮观。",tip:"需购票并做好山路驾驶准备。",tag:"自然风光",lat:40.6000,lng:117.3500},
+        "s127":{name:"黄花城水长城",area:"怀柔区九渡河镇",desc:"长城入水奇观，湖水环抱长城，可乘船、徒步、露营。",tip:"夏季可戏水，秋色宜人。",tag:"长城关隘",lat:40.4120,lng:116.3800},
+        "s128":{name:"响水湖长城",area:"怀柔区渤海镇",desc:"长城与泉水结合的原生态景区，虹鳟鱼与长城夜游有特色。",tip:"适合家庭休闲与长城徒步。",tag:"长城关隘",lat:40.4800,lng:116.4600},
+        "s129":{name:"喇叭沟门原始森林",area:"怀柔区喇叭沟门满族乡",desc:"北京面积最大的原始次生林，白桦林秋色如油画，被誉为“京北香格里拉”。",tip:"秋季白桦林是摄影天堂。",tag:"自然公园",lat:40.8500,lng:116.6700},
+        "s130":{name:"爨底下村",area:"门头沟区斋堂镇",desc:"明清古村落完整保存，依山而建的四合院古民居，电影《投名状》取景地。",tip:"古村住宿可体验京西乡村生活。",tag:"古镇度假",lat:40.1200,lng:115.7000}
+    };
+
+    // ============ 页面导航切换 ============
+    var navBtns = document.querySelectorAll(".nav-btn");
+    var pages = document.querySelectorAll(".page-panel");
+    navBtns.forEach(function(btn){
+        btn.addEventListener("click",function(){
+            var targetId = btn.getAttribute("data-target");
+            navBtns.forEach(function(b){b.classList.remove("active");});
+            btn.classList.add("active");
+            pages.forEach(function(p){p.classList.remove("show");});
+            var target = document.getElementById(targetId);
+            if(target){target.classList.add("show");}
+        });
+    });
+
+    function escHtml(s){
+        return String(s).replace(/[&<>"']/g, function(c){
+            return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+        });
+    }
+
+    // ============ 百度地图引擎 ============
+    var BAIDU_AK = "Df8STi96zf8R33HdORrOFlsiYpazlErr";
+    var mapEl = document.getElementById("map");
+    var loadingEl = document.getElementById("mapLoading");
+    var fallbackEl = document.getElementById("mapFallback");
+    var fallbackSvg = document.getElementById("fbSvg");
+
+    // WGS-84 → GCJ-02 → BD-09 坐标转换（点位使用标准经纬度，百度地图使用 BD-09 坐标系）
+    function wgs84ToGcj02(lng, lat){
+        var PI = Math.PI;
+        var a = 6378245.0;
+        var ee = 0.00669342162296594323;
+        function outOfChina(lng, lat){
+            return !(lng > 73.66 && lng < 135.05 && lat > 3.86 && lat < 53.55);
+        }
+        function transformLat(x, y){
+            var ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+            ret += (20.0 * Math.sin(6.0 * x * PI) + 20.0 * Math.sin(2.0 * x * PI)) * 2.0 / 3.0;
+            ret += (20.0 * Math.sin(y * PI) + 40.0 * Math.sin(y / 3.0 * PI)) * 2.0 / 3.0;
+            ret += (160.0 * Math.sin(y / 12.0 * PI) + 320 * Math.sin(y * PI / 30.0)) * 2.0 / 3.0;
+            return ret;
+        }
+        function transformLng(x, y){
+            var ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+            ret += (20.0 * Math.sin(6.0 * x * PI) + 20.0 * Math.sin(2.0 * x * PI)) * 2.0 / 3.0;
+            ret += (20.0 * Math.sin(x * PI) + 40.0 * Math.sin(x / 3.0 * PI)) * 2.0 / 3.0;
+            ret += (150.0 * Math.sin(x / 12.0 * PI) + 300.0 * Math.sin(x / 30.0 * PI)) * 2.0 / 3.0;
+            return ret;
+        }
+        if(outOfChina(lng, lat)){ return {lng:lng, lat:lat}; }
+        var dLat = transformLat(lng - 105.0, lat - 35.0);
+        var dLng = transformLng(lng - 105.0, lat - 35.0);
+        var radLat = lat / 180.0 * PI;
+        var magic = Math.sin(radLat);
+        magic = 1 - ee * magic * magic;
+        var sqrtMagic = Math.sqrt(magic);
+        dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * PI);
+        dLng = (dLng * 180.0) / (a / sqrtMagic * Math.cos(radLat) * PI);
+        return {lng:lng + dLng, lat:lat + dLat};
+    }
+    function gcj02ToBd09(lng, lat){
+        var x = lng, y = lat;
+        var z = Math.sqrt(x * x + y * y) + 0.00002 * Math.sin(y * Math.PI);
+        var theta = Math.atan2(y, x) + 0.000003 * Math.cos(x * Math.PI);
+        return {lng:z * Math.cos(theta) + 0.0065, lat:z * Math.sin(theta) + 0.006};
+    }
+    function wgsToBd(lat, lng){
+        var g = wgs84ToGcj02(lng, lat);
+        var b = gcj02ToBd09(g.lng, g.lat);
+        return {lng:b.lng, lat:b.lat};
+    }
+
+    var MARKER_ICON = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30'%3E%3Ccircle cx='15' cy='15' r='11' fill='%23b8262f' stroke='%23ffffff' stroke-width='2.5'/%3E%3Ccircle cx='15' cy='15' r='4.5' fill='%23ffd83d'/%3E%3C/svg%3E";
+
+    var bmap = null;
+    var bmapReady = false;
+    var baiduFailed = false;
+
+    function initBaiduMap(){
+        if(bmapReady || typeof BMap === "undefined"){return;}
+        bmap = new BMap.Map(mapEl, {enableHighResolution:true, enableMapClick:false});
+        bmap.centerAndZoom(new BMap.Point(116.42, 40.10), 10);
+        bmap.enableScrollWheelZoom(true);
+        bmap.addControl(new BMap.NavigationControl({anchor:BMAP_ANCHOR_BOTTOM_RIGHT, type:BMAP_NAVIGATION_CONTROL_ZOOM}));
+        bmap.addControl(new BMap.ScaleControl({anchor:BMAP_ANCHOR_BOTTOM_LEFT}));
+
+        var viewportPts = [];
+        try{
+            var icon = new BMap.Icon(MARKER_ICON, new BMap.Size(30,30), {anchor:new BMap.Size(15,15)});
+            Object.keys(landmarkData).forEach(function(id){
+                var d = landmarkData[id];
+                var bd = wgsToBd(d.lat, d.lng);
+                var pt = new BMap.Point(bd.lng, bd.lat);
+                viewportPts.push(pt);
+                var marker = new BMap.Marker(pt, {icon:icon, title:d.name + "（" + d.area + "）", enableClicking:true});
+                marker.addEventListener("click", function(){
+                    showBaiduInfo(d);
+                });
+                bmap.addOverlay(marker);
+            });
+        }catch(err){
+            // 自定义图标异常时回退为默认标注
+            Object.keys(landmarkData).forEach(function(id){
+                var d = landmarkData[id];
+                var bd = wgsToBd(d.lat, d.lng);
+                var pt = new BMap.Point(bd.lng, bd.lat);
+                viewportPts.push(pt);
+                var marker = new BMap.Marker(pt, {title:d.name + "（" + d.area + "）", enableClicking:true});
+                marker.addEventListener("click", function(){
+                    showBaiduInfo(d);
+                });
+                bmap.addOverlay(marker);
+            });
+        }
+        if(viewportPts.length){
+            bmap.setViewport(viewportPts, {margin:70});
+        }
+        // 点击地图空白才关闭弹窗；点击 marker 由 marker 事件处理，不关闭
+        bmap.addEventListener("click", function(ev){
+            if(ev && ev.overlay){ return; }
+            if(bmap){ bmap.closeInfoWindow(); }
+        });
+        bmapReady = true;
+        loadingEl.classList.remove("show");
+    }
+
+    function showBaiduInfo(d){
+        if(!bmap){return;}
+        var html = '<div style="font-family:inherit;">'
+            + '<div style="font-family:STXingkai,楷体,serif;font-size:20px;color:#8c1c22;margin:0 0 4px;">★ ' + escHtml(d.name) + '</div>'
+            + '<div style="color:#6f554e;font-size:13px;margin-bottom:8px;">📍 ' + escHtml(d.area) + '</div>'
+            + '<div style="line-height:1.7;font-size:14px;color:#3a2320;">' + escHtml(d.desc) + '</div>'
+            + '<div style="margin-top:10px;padding:8px 10px;background:#fbeeee;border-left:4px solid #b8262f;border-radius:0 8px 8px 0;font-size:13px;color:#7c3a35;">💡 ' + escHtml(d.tip || "可结合地图周边点位规划研学行程。") + '</div>'
+            + '</div>';
+        var info = new BMap.InfoWindow(html, {width:330, enableCloseOnClick:false});
+        var bd = wgsToBd(d.lat, d.lng);
+        bmap.openInfoWindow(info, new BMap.Point(bd.lng, bd.lat));
+    }
+
+    function initFailed(){
+        if(baiduFailed || bmapReady){return;}
+        baiduFailed = true;
+        clearTimeout(loadTimer);
+        loadingEl.classList.remove("show");
+        mapEl.style.display = "none";
+        fallbackEl.classList.add("show");
+        buildFallback();
+    }
+
+    window.__jhInitBaiduMap = function(){
+        try{
+            if(typeof BMap === "undefined"){ initFailed(); return; }
+            initBaiduMap();
+        }catch(err){ initFailed(); }
+    };
+
+    // 动态加载百度地图 API（v3.0，带 AK）
+    loadingEl.classList.add("show");
+    var loadTimer = setTimeout(initFailed, 9000);
+    var baiduScript = document.createElement("script");
+    baiduScript.type = "text/javascript";
+    baiduScript.async = true;
+    baiduScript.src = "https://api.map.baidu.com/api?v=3.0&ak=" + BAIDU_AK + "&callback=__jhInitBaiduMap";
+    baiduScript.addEventListener("error", initFailed);
+    document.head.appendChild(baiduScript);
+
+    // ============ AI 智能路线规划器（红色地标 + 北京全部景区） ============
+    var plannerInput = document.getElementById("plannerInput");
+    var plannerBtn = document.getElementById("plannerBtn");
+    var plannerResult = document.getElementById("plannerResult");
+
+    // 快捷添加：点击芯片把地点名称追加到输入框
+    var quickChips = document.querySelectorAll(".qchip");
+    quickChips.forEach(function(chip){
+        chip.addEventListener("click", function(){
+            var v = plannerInput.value.trim();
+            var addName = chip.getAttribute("data-name");
+            plannerInput.value = v ? v + "、" + addName : addName;
+            plannerInput.focus();
+        });
+    });
+
+    // 在红色地标与景区两个数据源中查找一个输入词的全部命中项
+    function findHits(tok){
+        var exact = [];
+        var nameRed = [];
+        var nameScenic = [];
+        var areaHits = [];
+        Object.keys(landmarkData).forEach(function(id){
+            var d = landmarkData[id];
+            if(d.name === tok){ exact.push(d); }
+            else if(d.name.indexOf(tok) >= 0 || tok.indexOf(d.name) >= 0){ nameRed.push(d); }
+            else if(d.area.indexOf(tok) >= 0 || tok.indexOf(d.area) >= 0){ areaHits.push(d); }
+        });
+        Object.keys(scenicData).forEach(function(id){
+            var d = scenicData[id];
+            if(d.name === tok){ exact.push(d); }
+            else if(d.name.indexOf(tok) >= 0 || tok.indexOf(d.name) >= 0){ nameScenic.push(d); }
+            else if(d.area.indexOf(tok) >= 0 || tok.indexOf(d.area) >= 0){ areaHits.push(d); }
+        });
+        // 猜测优先级：精确名称 > 名称包含（红色优先）> 区域包含
+        return exact.concat(nameRed, nameScenic, areaHits);
+    }
+
+    // 解析输入文本，匹配并归类（支持“从A到B”等自然语言整句）
+    function matchPlaces(raw){
+        var tokens = raw.split(/[,，、;；\s]+/).map(function(t){return t.trim();}).filter(function(t){return t.length > 0;});
+        var matched = [];
+        var unmatched = [];
+        var guessed = [];
+        var seen = {};
+        function pushHit(d, tok, hits){
+            var kind = d.tag ? "scenic" : "red";
+            if(!seen[d.name]){
+                seen[d.name] = 1;
+                matched.push({d:d, kind:kind});
+            }
+            if(hits.length > 1 && guessed.indexOf("「" + tok + "」→ " + d.name) === -1){
+                var others = hits.slice(1, 3).map(function(h){return h.name;});
+                guessed.push("「" + tok + "」→ " + d.name + (others.length ? "（另有 " + others.join("、") + " 等候选）" : ""));
+            }
+        }
+        tokens.forEach(function(tok){
+            var hits = findHits(tok);
+            if(hits.length){
+                pushHit(hits[0], tok, hits);
+            } else {
+                // 整句未命中（如“从清华到颐和园怎么走”）→ 用子串猜测引擎提取其中的地点
+                var subs = extractPlaces(tok);
+                if(subs.length){
+                    subs.forEach(function(nm){
+                        var d = findDataByName(nm);
+                        if(d){ pushHit(d, nm, [d]); }
+                    });
+                } else {
+                    unmatched.push(tok);
+                }
+            }
+        });
+        // 兜底：整句仍无匹配时，对整个输入再做一次子串提取
+        if(!matched.length){
+            var whole = extractPlaces(raw);
+            whole.forEach(function(nm){
+                var d = findDataByName(nm);
+                if(d){ pushHit(d, nm, [d]); }
+            });
+        }
+        return {matched:matched, unmatched:unmatched, guessed:guessed};
+    }
+
+    // 为相邻点位生成地铁/交通方案提示
+    function routeTransport(items){
+        var lines = [];
+        for(var i = 0; i < items.length - 1; i++){
+            var a = items[i].d, b = items[i + 1].d;
+            var ka = travelKB[a.name] || null;
+            var kb = travelKB[b.name] || null;
+            var km = calcKm(a, b);
+            var seg = "";
+            if(ka && ka.metro && kb && kb.metro){
+                var am = ka.metro, bm = kb.metro;
+                var amLine = am.split("·")[0].trim();
+                if(bm.indexOf(amLine) >= 0){
+                    seg = "🚇 <b>" + escHtml(a.name) + " → " + escHtml(b.name) + "</b>：两处均邻近「" + escHtml(amLine) + "」，在 " + escHtml(am) + " 上车，可直达 " + escHtml(b.name) + " 附近（" + escHtml(bm) + "）下车；直线约 " + km + " 公里。";
+                } else {
+                    seg = "🚇 <b>" + escHtml(a.name) + " → " + escHtml(b.name) + "</b>：在 " + escHtml(am) + " 上车，至 " + escHtml(b.name) + " 附近的 " + escHtml(bm) + " 下车，换乘请以地图App实时方案为准；直线约 " + km + " 公里。";
+                }
+            } else if(ka && ka.metro){
+                seg = "🚇 <b>" + escHtml(a.name) + " → " + escHtml(b.name) + "</b>：" + escHtml(a.name) + " 附近可在 " + escHtml(ka.metro) + " 上车；" + escHtml(b.name) + " 的地铁信息暂未收录，建议地图App实时规划（直线约 " + km + " 公里）。";
+            } else if(kb && kb.metro){
+                seg = "🚇 <b>" + escHtml(a.name) + " → " + escHtml(b.name) + "</b>：" + escHtml(a.name) + " 的地铁信息暂未收录；至 " + escHtml(b.name) + " 附近可在 " + escHtml(kb.metro) + " 下车，建议地图App实时规划（直线约 " + km + " 公里）。";
+            } else {
+                seg = "🚇 <b>" + escHtml(a.name) + " → " + escHtml(b.name) + "</b>：两段地铁信息暂未收录，建议地图App实时规划（直线距离约 " + km + " 公里）。";
+            }
+            lines.push(seg);
+        }
+        return lines.length ? '<div class="pr-transport">' + lines.join("<br>") + '</div>' : "";
+    }
+
+    // 最近邻贪心排序：从第一个点位出发，每次去最近且未访问的点，形成最顺路路线
+    function greedyRoute(items){
+        var route = [];
+        var rest = items.slice();
+        if(!rest.length){return route;}
+        route.push(rest[0]);
+        rest.splice(0, 1);
+        while(rest.length){
+            var last = route[route.length - 1].d;
+            var bestIdx = 0;
+            var bestDist = Infinity;
+            for(var i = 0; i < rest.length; i++){
+                var p = rest[i].d;
+                var dist = Math.pow(p.lat - last.lat, 2) + Math.pow(p.lng - last.lng, 2);
+                if(dist < bestDist){
+                    bestDist = dist;
+                    bestIdx = i;
+                }
+            }
+            route.push(rest[bestIdx]);
+            rest.splice(bestIdx, 1);
+        }
+        return route;
+    }
+
+    function buildRoute(){
+        var raw = plannerInput.value;
+        var res = matchPlaces(raw);
+        var html = "";
+        if(res.guessed && res.guessed.length){
+            html += '<div class="pr-guessed">🧠 ' + escHtml(res.guessed.join("；")) + '，已按首个猜测生成路线；如需更精准可输入完整名称。</div>';
+        }
+        if(res.unmatched.length){
+            html += '<div class="pr-unmatched">未找到以下地点：<b>' + escHtml(res.unmatched.join("；")) + '</b>，请尝试输入完整名称（如“故宫”“颐和园”“北大红楼”）。</div>';
+        }
+        if(res.matched.length < 2){
+            html += '<div class="pr-unmatched">请至少输入 2 个想去的地点，才能生成推荐路线。你可以点击上方快捷标签快速添加。</div>';
+            plannerResult.innerHTML = html;
+            return;
+        }
+        var route = greedyRoute(res.matched);
+        var stopsHtml = route.map(function(el, i){
+            var icon = el.kind === "red" ? "🔴" : "🏞️";
+            return '<span class="pr-stop">' + (i + 1) + '. ' + icon + ' ' + escHtml(el.d.name) + '</span>';
+        }).join('<span class="arrow">→</span>');
+        var detailHtml = route.map(function(el, i){
+            var d = el.d;
+            var tagHtml = '<span class="place-tag ' + (el.kind === "red" ? "red" : "scenic") + '">' + (el.kind === "red" ? "红色地标" : escHtml(d.tag || "景区")) + '</span>';
+            return '<div class="pr-detail-item"><b>' + (i + 1) + '. ' + escHtml(d.name) + '</b>（' + escHtml(d.area) + '）' + tagHtml + '<br>游览重点：' + escHtml(d.tip || d.desc) + '</div>';
+        }).join("");
+        var hours = route.length <= 3 ? "半天（约3-4小时）" : (route.length <= 6 ? "一日（约6-8小时）" : "两日（建议分两天完成）");
+        html += '<div class="pr-title">🚩 为你生成的推荐游览路线</div>';
+        html += '<div class="pr-route">' + stopsHtml + '</div>';
+        html += '<div class="pr-detail">' + detailHtml + '</div>';
+        html += '<div class="pr-advice">⏱️ 建议用时：' + hours + '；本路线按空间邻近度自动排序，红色地标（🔴）与热门景区（🏞️）可以混合串联，可按顺序实地游览。</div>';
+        var transportHtml = routeTransport(route);
+        if(transportHtml){ html += transportHtml; }
+        plannerResult.innerHTML = html;
+        showRouteMap(route);
+    }
+
+    // 路线地图：生成后显示百度地图折线；离线时降级为 SVG 示意路线
+    var SCENIC_ICON = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30'%3E%3Ccircle cx='15' cy='15' r='11' fill='%234a7abf' stroke='%23ffffff' stroke-width='2.5'/%3E%3Ccircle cx='15' cy='15' r='4.5' fill='%23ffd83d'/%3E%3C/svg%3E";
+    var routeMap = null;
+    function buildRouteSvg(items, container){
+        var ns = "http://www.w3.org/2000/svg";
+        var W = 800, H = 500, pad = 30;
+        var lats = items.map(function(el){return el.d.lat;});
+        var lngs = items.map(function(el){return el.d.lng;});
+        var minLat = Math.min.apply(null, lats);
+        var maxLat = Math.max.apply(null, lats);
+        var minLng = Math.min.apply(null, lngs);
+        var maxLng = Math.max.apply(null, lngs);
+        if(maxLat - minLat < 0.02){ minLat -= 0.02; maxLat += 0.02; }
+        if(maxLng - minLng < 0.02){ minLng -= 0.02; maxLng += 0.02; }
+        function px(lng, lat){
+            var x = pad + (lng - minLng) / (maxLng - minLng) * (W - pad * 2);
+            var y = H - pad - (lat - minLat) / (maxLat - minLat) * (H - pad * 2);
+            return {x:x, y:y};
+        }
+        var svg = document.createElementNS(ns, "svg");
+        svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+        svg.setAttribute("width", "100%");
+        svg.setAttribute("height", "320");
+        var rect = document.createElementNS(ns, "rect");
+        rect.setAttribute("x", 0); rect.setAttribute("y", 0);
+        rect.setAttribute("width", W); rect.setAttribute("height", H);
+        rect.setAttribute("fill", "#eef1f6"); rect.setAttribute("rx", 10);
+        svg.appendChild(rect);
+        if(items.length >= 2){
+            var pointsStr = items.map(function(el){
+                var p = px(el.d.lng, el.d.lat);
+                return p.x.toFixed(1) + "," + p.y.toFixed(1);
+            }).join(" ");
+            var poly = document.createElementNS(ns, "polyline");
+            poly.setAttribute("points", pointsStr);
+            poly.setAttribute("fill", "none");
+            poly.setAttribute("stroke", "#b8262f");
+            poly.setAttribute("stroke-width", "4");
+            poly.setAttribute("stroke-linejoin", "round");
+            poly.setAttribute("stroke-linecap", "round");
+            poly.setAttribute("opacity", "0.85");
+            svg.appendChild(poly);
+        }
+        items.forEach(function(el, i){
+            var d = el.d;
+            var p = px(d.lng, d.lat);
+            var c = document.createElementNS(ns, "circle");
+            c.setAttribute("cx", p.x.toFixed(1));
+            c.setAttribute("cy", p.y.toFixed(1));
+            c.setAttribute("r", 8);
+            c.setAttribute("fill", el.kind === "red" ? "#b8262f" : "#4a7abf");
+            c.setAttribute("stroke", "#fff");
+            c.setAttribute("stroke-width", "2.5");
+            var t = document.createElementNS(ns, "title");
+            t.textContent = (i + 1) + ". " + d.name;
+            c.appendChild(t);
+            svg.appendChild(c);
+            var label = document.createElementNS(ns, "text");
+            label.setAttribute("x", (p.x + 12).toFixed(1));
+            label.setAttribute("y", (p.y - 8).toFixed(1));
+            label.setAttribute("font-size", "13");
+            label.setAttribute("fill", "#3a2320");
+            label.textContent = (i + 1) + ". " + d.name;
+            svg.appendChild(label);
+        });
+        container.appendChild(svg);
+    }
+    function showRouteMap(items){
+        var wrap = document.getElementById("routeMapWrap");
+        var container = document.getElementById("routeMapContainer");
+        if(!wrap || !container){ return; }
+        wrap.style.display = "block";
+        container.innerHTML = "";
+        if(typeof BMap !== "undefined"){
+            try{
+                if(!routeMap){
+                    // 容器刚从隐藏变为显示，先读取 offsetWidth/Height 强制同步布局，
+                    // 避免百度地图初始化时拿到 0 宽高导致地图空白（首次生成路线的关键修复）
+                    var cw = container.offsetWidth || 560;
+                    var ch = container.offsetHeight || 320;
+                    routeMap = new BMap.Map(container, {enableMapClick:false, enableHighResolution:true});
+                    routeMap.enableScrollWheelZoom(true);
+                    routeMap.addEventListener("click", function(ev){
+                        if(ev && ev.overlay){ return; }
+                        if(routeMap){ routeMap.closeInfoWindow(); }
+                    });
+                }
+                routeMap.clearOverlays();
+                var pts = [];
+                items.forEach(function(el){
+                    var d = el.d;
+                    var bd = wgsToBd(d.lat, d.lng);
+                    var pt = new BMap.Point(bd.lng, bd.lat);
+                    pts.push(pt);
+                    var iconUrl = el.kind === "red" ? MARKER_ICON : SCENIC_ICON;
+                    var icon = new BMap.Icon(iconUrl, new BMap.Size(30, 30), {anchor:new BMap.Size(15, 15)});
+                    var marker = new BMap.Marker(pt, {icon:icon, title:d.name, enableClicking:true});
+                    marker.addEventListener("click", function(){
+                        var info = new BMap.InfoWindow(
+                            '<div style="font-family:inherit;font-size:14px;line-height:1.6;"><b style="color:#8c1c22;">' + escHtml(d.name) + '</b><br>' + escHtml(d.area) + '</div>',
+                            {width:260, enableCloseOnClick:false}
+                        );
+                        routeMap.openInfoWindow(info, pt);
+                    });
+                    routeMap.addOverlay(marker);
+                });
+                if(pts.length >= 2){
+                    var line = new BMap.Polyline(pts, {strokeColor:"#b8262f", strokeWeight:4, strokeOpacity:.85, strokeStyle:"solid"});
+                    routeMap.addOverlay(line);
+                }
+                function fitView(){
+                    if(routeMap && pts.length){ routeMap.setViewport(pts, {margin:44}); }
+                }
+                fitView();
+                // 等容器布局完全稳定后再适配一次视野，避免首次显示时视野计算失败
+                setTimeout(fitView, 150);
+            }catch(err){
+                container.innerHTML = '<div style="padding:18px;color:#7c3a35;font-size:14px;">地图渲染失败，已切换为示意路线：</div>';
+                buildRouteSvg(items, container);
+            }
+        } else {
+            buildRouteSvg(items, container);
+        }
+    }
+
+    plannerBtn.addEventListener("click", buildRoute);
+    plannerInput.addEventListener("keydown", function(ev){
+        if(ev.key === "Enter"){
+            ev.preventDefault();
+            buildRoute();
+        }
+    });
+    // 清空：重置输入框与结果区
+    var plannerClearBtn = document.getElementById("plannerClearBtn");
+    plannerClearBtn.addEventListener("click", function(){
+        plannerInput.value = "";
+        plannerResult.innerHTML = "";
+        plannerInput.focus();
+    });
+
+    // ============ 游览问答智能体（交通 / 预约 / 开放时间 / 简介） ============
+    var travelKB = {
+        "故宫博物院":{metro:"地铁1号线·天安门东/西站",ticket:"旺季60元/淡季40元，需提前7天在官网或小程序实名预约",hours:"8:30-17:00，16:00停止入馆，周一闭馆"},
+        "天安门广场":{metro:"地铁1号线·天安门东/西站",ticket:"免费开放，需安检、预约",hours:"升旗至降旗，看升旗建议提前1小时到场"},
+        "天坛公园":{metro:"地铁5号线·天坛东门站",ticket:"大门票15元，联票34元（含祈年殿、回音壁等）",hours:"公园6:00-22:00，祈年殿等景点8:00-17:30"},
+        "颐和园":{metro:"地铁4号线·西苑站/北宫门站，或西郊线颐和园西门站",ticket:"旺季30元，联票60元，需预约",hours:"6:30-18:00，17:00停止入园"},
+        "圆明园遗址公园":{metro:"地铁4号线·圆明园站",ticket:"大门票10元，西洋楼遗址联票25元",hours:"7:00-21:00，西洋楼遗址8:00-18:00"},
+        "香山公园":{metro:"西郊线·香山站",ticket:"旺季10元（红叶季15元），需预约",hours:"6:00-18:30，碧云寺8:30-17:00"},
+        "香山革命纪念地":{metro:"西郊线·香山站",ticket:"免费，香山革命纪念馆需预约",hours:"9:00-16:30，周一闭馆"},
+        "北大红楼":{metro:"地铁8号线·中国美术馆站",ticket:"免费，需提前实名预约，凭身份证入馆",hours:"9:00-16:00，周一闭馆"},
+        "陶然亭慈悲庵":{metro:"地铁4号线·陶然亭站",ticket:"公园门票2元，慈悲庵展馆免费需预约",hours:"公园6:00-22:00，慈悲庵9:00-16:30"},
+        "长辛店二七纪念馆":{metro:"地铁14号线·张郭庄站转公交",ticket:"免费开放",hours:"周二至周日9:00-16:00，周一闭馆"},
+        "双清别墅":{metro:"西郊线·香山站",ticket:"免费（进入香山革命纪念地需预约）",hours:"9:00-16:30，周一闭馆"},
+        "李大钊烈士陵园":{metro:"地铁4号线·圆明园站转公交",ticket:"免费开放",hours:"8:30-16:00"},
+        "八达岭长城":{metro:"市郊铁路S2线·八达岭站，或京张高铁·八达岭长城站",ticket:"旺季40元，缆车/索道另计，需预约",hours:"6:30-16:30"},
+        "慕田峪长城":{metro:"无直达地铁，东直门枢纽乘916快线转景区摆渡车",ticket:"40元，摆渡车另计，需预约",hours:"7:30-17:30"},
+        "居庸关长城":{metro:"无直达地铁，地铁昌平线转公交879/昌20路",ticket:"旺季40元",hours:"8:00-17:00"},
+        "明十三陵":{metro:"地铁昌平线·十三陵景区站",ticket:"定陵60元，长陵45元，联票另计",hours:"8:30-17:00"},
+        "国家体育场（鸟巢）":{metro:"地铁8号线·奥体中心站",ticket:"外观免费，登顶参观需购票",hours:"9:00-19:00"},
+        "国家游泳中心（水立方）":{metro:"地铁8号线·奥体中心站",ticket:"外观免费，馆内冰上项目收费",hours:"9:00-18:00"},
+        "雍和宫":{metro:"地铁2号线/5号线·雍和宫站",ticket:"25元",hours:"9:00-16:30，周一闭馆"},
+        "恭王府":{metro:"地铁6号线·北海北站",ticket:"40元，需实名预约",hours:"8:30-17:00，周一闭馆"},
+        "国家植物园":{metro:"西郊线·国家植物园站",ticket:"大门票10元，卧佛寺联票50元",hours:"6:00-20:00"},
+        "中国国家博物馆":{metro:"地铁1号线·天安门东站",ticket:"免费，需提前7天在官网预约",hours:"9:00-17:00，16:00停止入馆，周一闭馆"},
+        "中国科学技术馆":{metro:"地铁8号线·森林公园南门站",ticket:"主展厅30元，特效影院另购票",hours:"9:30-17:00，周一闭馆"},
+        "北京环球影城":{metro:"地铁1号线/7号线·环球度假区站",ticket:"标准票约500-600元，节假日上浮，需购票入园",hours:"9:00-21:00（视季节调整）"},
+        "宋庆龄同志故居":{metro:"地铁8号线·什刹海站",ticket:"20元",hours:"9:00-17:00，周一闭馆"},
+        "古北水镇":{metro:"无直达地铁，东直门枢纽乘古北水镇直达巴士",ticket:"140元，司马台长城联票另计",hours:"9:00-22:00"},
+        "十渡风景区":{metro:"无直达地铁，北京西站乘市郊铁路/917路",ticket:"各景点单独收费",hours:"8:00-18:00"},
+        "潭柘寺":{metro:"无直达地铁，地铁S1线·上岸站转931路",ticket:"55元",hours:"8:30-16:30"},
+        "首钢园":{metro:"地铁6号线·金安桥站，或11号线·新首钢站",ticket:"园区免费入园，部分展馆收费",hours:"园区全天开放，展馆各异"},
+        "798艺术区":{metro:"地铁14号线·望京南站",ticket:"园区免费，各展览单独收费",hours:"展馆多为10:00-19:00"},
+        "什刹海":{metro:"地铁8号线·什刹海站",ticket:"免费开放",hours:"全天开放，游船旺季至22:00"},
+        "南锣鼓巷":{metro:"地铁6号线/8号线·南锣鼓巷站",ticket:"免费开放",hours:"全天开放"},
+        "北京动物园":{metro:"地铁4号线·动物园站",ticket:"旺季15元，海洋馆另购票",hours:"7:30-18:00"},
+        "玉渊潭公园":{metro:"地铁1号线·军事博物馆站，或9号线·白堆子站",ticket:"2元，樱花节期间10元",hours:"6:00-21:30"},
+        "龙庆峡":{metro:"无直达地铁，市郊铁路S2线转公交",ticket:"40元，冰灯节另计",hours:"8:00-17:00"},
+        "雁栖湖":{metro:"无直达地铁，京郊线转公交",ticket:"湖区免费，游船等项目单独收费",hours:"8:00-17:30"},
+        "宛平城与中国人民抗日战争纪念馆":{metro:"地铁14号线·大瓦窑站转公交",ticket:"纪念馆免费，需预约",hours:"9:00-16:30，周一闭馆"},
+        "中国美术馆":{metro:"地铁8号线·中国美术馆站",ticket:"免费，需预约",hours:"9:00-17:00，周一闭馆"},
+        "中国人民革命军事博物馆":{metro:"地铁1号线/9号线·军事博物馆站",ticket:"免费，需预约",hours:"9:00-17:00，周一闭馆"},
+        "平北抗日烈士纪念园":{metro:"无直达地铁，建议自驾或旅游大巴",ticket:"免费开放",hours:"8:30-16:30"},
+        "清华大学":{metro:"地铁4号线·圆明园站，步行约10分钟",ticket:"免费，参观需通过小程序预约（节假日限流）",hours:"校园开放时段一般为7:00-19:00，具体以学校公告为准"},
+        "北京大学":{metro:"地铁4号线·北京大学东门站",ticket:"免费，参观需提前在小程序实名预约",hours:"开放日及法定节假日对游客开放，具体以学校公告为准"},
+        "前门大街":{metro:"地铁2号线·前门站",ticket:"街区免费开放",hours:"全天开放，店铺多为10:00-22:00"},
+        "三里屯太古里":{metro:"地铁10号线·团结湖站",ticket:"街区免费开放",hours:"街区全天开放，店铺10:00-22:00"},
+        "朝阳公园":{metro:"地铁14号线·朝阳公园站",ticket:"免费开放",hours:"6:00-22:00"},
+        "白云观":{metro:"地铁1号线·木樨地站转公交，或6号线·广安门内站",ticket:"10元",hours:"8:30-16:30"},
+        "凤凰岭自然风景区":{metro:"地铁16号线·北安河站转公交专线",ticket:"25元",hours:"6:30-17:30"}
+    };
+
+    function findDataByName(name){
+        var hit = null;
+        Object.keys(landmarkData).forEach(function(id){ if(landmarkData[id].name === name){ hit = landmarkData[id]; } });
+        Object.keys(scenicData).forEach(function(id){ if(scenicData[id].name === name){ hit = scenicData[id]; } });
+        return hit;
+    }
+    function calcKm(a, b){
+        if(!a || !b){ return 10; }
+        var dx = (a.lng - b.lng) * 85;
+        var dy = (a.lat - b.lat) * 111;
+        return Math.max(1, Math.round(Math.sqrt(dx * dx + dy * dy)));
+    }
+    function extractPlaces(text){
+        var len = text.length;
+        var spots = [];
+        var maxSub = Math.min(len, 10);
+        // 在问题文本中枚举子串（2-10字），用智能猜测引擎识别地点
+        for(var i = 0; i < len; i++){
+            for(var j = i + 2; j <= Math.min(len, i + maxSub); j++){
+                var sub = text.slice(i, j);
+                var hits = findHits(sub);
+                if(hits.length){
+                    spots.push({name:hits[0].name, idx:i, subLen:j - i});
+                }
+            }
+        }
+        // 同一起点只保留最长命中；按文本顺序去重，返回前两个地点名
+        spots.sort(function(a, b){ return a.idx - b.idx || b.subLen - a.subLen; });
+        var unique = [];
+        var seen = {};
+        var lastIdx = -1;
+        spots.forEach(function(s){
+            if(s.idx === lastIdx){ return; }
+            lastIdx = s.idx;
+            if(!seen[s.name]){
+                seen[s.name] = 1;
+                unique.push(s);
+            }
+        });
+        return unique.slice(0, 2).map(function(s){ return s.name; });
+    }
+    function routeAnswer(aName, bName){
+        var a = findDataByName(aName);
+        var b = findDataByName(bName);
+        var ka = travelKB[aName] || null;
+        var kb = travelKB[bName] || null;
+        var km = calcKm(a, b);
+        var parts = [];
+        if(ka && kb && ka.metro && kb.metro){
+            parts.push("🚇 从「" + aName + "」到「" + bName + "」推荐地铁：");
+            parts.push("　出发：在 " + aName + " 附近 " + ka.metro + " 上车；");
+            parts.push("　到达：在 " + bName + " 附近 " + kb.metro + " 下车（换乘以地图App实时规划为准）。");
+        } else {
+            parts.push("🚇 这条线路暂未收录精准地铁方案，建议打开地图App输入起点终点实时规划。");
+        }
+        parts.push("🚌 公交可查96166或地图App实时线路；直线距离约 " + km + " 公里，驾车约需 " + Math.max(30, Math.round(km * 2.2)) + " 分钟。");
+        return parts.join("\n");
+    }
+    function ticketAnswer(name){
+        var kb = travelKB[name];
+        if(kb && kb.ticket){
+            return "🎫 「" + name + "」" + kb.ticket + "。" + (kb.ticket.indexOf("预约") >= 0 ? "名额紧张，建议提前在官方渠道预约。" : "");
+        }
+        return "🎫 「" + name + "」的门票与预约信息暂未收录，建议出发前通过官方公众号或景区官网查询确认。";
+    }
+    function hoursAnswer(name){
+        var kb = travelKB[name];
+        if(kb && kb.hours){ return "🕒 「" + name + "」开放时间：" + kb.hours + "（节假日可能延长，以景区当天公告为准）。"; }
+        return "🕒 「" + name + "」的开放时间暂未收录，建议出行当天查看景区公告或地图App。";
+    }
+    function introAnswer(name){
+        var d = findDataByName(name);
+        if(!d){ return "📍 「" + name + "」暂时没有更多介绍。"; }
+        return "📍 「" + name + "」（" + d.area + "）：" + d.desc + "\n💡 游览提示：" + d.tip;
+    }
+    function generalAnswer(name){
+        var kb = travelKB[name];
+        var d = findDataByName(name);
+        var parts = [];
+        if(d){ parts.push("📍 「" + name + "」（" + d.area + "）：" + d.desc); }
+        if(kb && kb.ticket){ parts.push("🎫 门票预约：" + kb.ticket); }
+        if(kb && kb.hours){ parts.push("🕒 开放时间：" + kb.hours); }
+        if(kb && kb.metro){ parts.push("🚇 附近地铁：" + kb.metro); }
+        if(parts.length){ return parts.join("\n"); }
+        return "📍 「" + name + "」的信息暂未收录，可换个说法问我，比如问预约或开放时间。";
+    }
+    function answerQuestion(q){
+        q = (q || "").trim();
+        if(!q){ return "请先输入问题，例如：从香山到颐和园怎么走？北大红楼需要预约吗？"; }
+        var places = extractPlaces(q);
+        var isRoute = /怎么走|怎么去|怎么到|坐几|几号|地铁|公交|交通|到.*怎么|从.*到/.test(q);
+        var isTicket = /预约|门票|免费|收费|多少钱|买票|购票/.test(q);
+        var isHours = /开放|几点|时间|开门|闭馆|营业/.test(q);
+        var isIntro = /怎么样|好玩|值得|有什么|推荐|适合/.test(q);
+        if(places.length >= 2 && isRoute){ return routeAnswer(places[0], places[1]); }
+        if(places.length >= 1){
+            var p = places[0];
+            if(isTicket){ return ticketAnswer(p); }
+            if(isHours){ return hoursAnswer(p); }
+            if(isIntro){ return introAnswer(p); }
+            if(isRoute){ return "你想从「" + p + "」出发去哪里？可以这样说：从" + p + "到颐和园怎么走？"; }
+            return generalAnswer(p);
+        }
+        return "这个问题我还不太会～你可以试试这样问：\n· 从香山到颐和园怎么走？\n· 北大红楼需要预约吗？\n· 故宫几点开放？";
+    }
+
+    var qaInput = document.getElementById("qaInput");
+    var qaBtn = document.getElementById("qaBtn");
+    var qaResult = document.getElementById("qaResult");
+    function renderAnswer(text){
+        var lines = String(text).split("\n");
+        var html = "";
+        lines.forEach(function(line){
+            if(line.trim()){ html += '<div class="qa-line">' + escHtml(line) + '</div>'; }
+        });
+        qaResult.innerHTML = '<div class="qa-bubble">' + html + '</div>';
+    }
+    function askQuestion(){
+        renderAnswer(answerQuestion(qaInput.value));
+    }
+    qaBtn.addEventListener("click", askQuestion);
+    qaInput.addEventListener("keydown", function(ev){
+        if(ev.key === "Enter"){ ev.preventDefault(); askQuestion(); }
+    });
+
+    // ============ 离线降级：示意地图 + 点击弹窗 ============
+    function buildFallback(){
+        var fbPoints = [
+            ["p1",396,232],["p2",312,254],["p3",338,302],["p4",192,154],["p5",224,370],
+            ["p6",294,214],["p7",330,102],["p8",246,190],["p9",348,268],["p10",374,216],
+            ["p11",426,244],["p12",454,280],["p13",490,222],["p14",522,294],["p15",570,240],
+            ["p16",614,310],["p17",652,262],["p18",676,350],["p19",590,394],["p20",534,432],
+            ["p21",462,398],["p22",392,420],["p23",314,412],["p24",250,436],["p25",182,394],
+            ["p26",144,322],["p27",166,256],["p28",138,192],["p29",174,132],["p30",230,98],
+            ["p31",292,120],["p32",358,146],["p33",412,168],["p34",470,134],["p35",532,162],
+            ["p36",592,186],["p37",644,218],["p38",700,244],["p39",732,304],["p40",706,372],
+            ["p41",648,416],["p42",574,446],["p43",502,462],["p44",436,444],["p45",362,458],
+            ["p46",290,466]
+        ];
+        var fbPopup = document.createElement("div");
+        fbPopup.className = "fb-popup";
+        fbPopup.innerHTML = '<span style="position:absolute;top:8px;right:12px;font-size:22px;cursor:pointer;color:#777;" aria-hidden="true">×</span><div id="fbPopupTitle" style="font-size:20px;color:#8c1c22;margin:0 24px 4px 0;font-family:STXingkai,楷体,serif;"></div><div id="fbArea" style="color:#6f554e;font-size:13px;margin-bottom:8px;"></div><p id="fbDesc" style="line-height:1.7;font-size:14px;"></p><p id="fbTip" style="margin-top:10px;padding:8px 10px;background:#fbeeee;border-left:4px solid #b8262f;border-radius:0 8px 8px 0;font-size:13px;color:#7c3a35;"></p>';
+        fallbackEl.appendChild(fbPopup);
+        fbPopup.querySelector("span").addEventListener("click", function(){fbPopup.style.display = "none";});
+
+        var ns = "http://www.w3.org/2000/svg";
+        fbPoints.forEach(function(pp){
+            var c = document.createElementNS(ns, "circle");
+            c.setAttribute("class", "fb-point");
+            c.setAttribute("data-id", pp[0]);
+            c.setAttribute("cx", pp[1]);
+            c.setAttribute("cy", pp[2]);
+            c.setAttribute("r", 6.2);
+            c.setAttribute("fill", "#b8262f");
+            c.setAttribute("title", landmarkData[pp[0]] ? landmarkData[pp[0]].name : "");
+            c.addEventListener("click", function(){
+                var d = landmarkData[c.getAttribute("data-id")];
+                if(!d){
+                    document.getElementById("fbPopupTitle").textContent = "暂无详情";
+                    document.getElementById("fbArea").textContent = "";
+                    document.getElementById("fbDesc").textContent = "该点位暂未收录详细档案，欢迎实地探访。";
+                    document.getElementById("fbTip").textContent = "";
+                } else {
+                    document.getElementById("fbPopupTitle").textContent = d.name;
+                    document.getElementById("fbArea").textContent = "📍 " + d.area;
+                    document.getElementById("fbDesc").textContent = d.desc;
+                    document.getElementById("fbTip").textContent = "💡 游览提示：" + d.tip;
+                }
+                fbPopup.style.display = "block";
+            });
+            fallbackSvg.appendChild(c);
+        });
+    }
+
+    // ============ 档案库动态渲染 ============
+    var archiveContainer = document.getElementById("archiveContainer");
+    if(archiveContainer){
+        Object.keys(landmarkData).forEach(function(id){
+            var i;
+            var d = landmarkData[id];
+            var card = document.createElement("article");
+            card.className = "archive-card";
+            var parts = [];
+            parts.push('<h3>' + escHtml(d.name) + '</h3>');
+            parts.push('<div class="a-area">📍 ' + escHtml(d.area) + '</div>');
+            parts.push('<p class="a-desc">' + escHtml(d.desc) + '</p>');
+            parts.push('<div class="a-tip">💡 ' + escHtml(d.tip) + '</div>');
+            card.innerHTML = parts.join("");
+            archiveContainer.appendChild(card);
+        });
+    }
+})();
+</script>
+</body>
+</html>
